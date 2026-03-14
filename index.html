@@ -1,2298 +1,2226 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Времяслед — Трекер времени</title>
-    <!-- PWA Meta Tags -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Времяслед — Трекер времени</title>
+<!-- PWA Meta Tags -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#6366f1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Бюджет Времени">
+<meta name="apple-mobile-web-app-title" content="Времяслед">
 <link rel="apple-touch-icon" href="icon.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- jsPDF for PDF generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-    <!-- SheetJS for XLS/CSV -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --primary: #6366f1;
-            --primary-light: #818cf8;
-            --primary-dark: #4f46e5;
-            --success: #10b981;
-            --success-light: #34d399;
-            --warning: #f59e0b;
-            --warning-light: #fbbf24;
-            --danger: #ef4444;
-            --danger-dark: #dc2626;
-            --service: #8b5cf6;
-            --service-light: #a78bfa;
-            --vk: #0077FF;
-            --pdf: #f43f5e;
-            --xls: #22c55e;
-            --csv: #3b82f6;
-            --telegram: #229ED9;
-            --email: #ea4335;
-            --bg: #f8fafc;
-            --surface: #ffffff;
-            --text: #1e293b;
-            --text-secondary: #64748b;
-            --border: #e2e8f0;
-            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-            --shadow-glow: 0 0 20px rgb(99 102 241 / 0.3);
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .app-container {
-            width: 100%;
-            max-width: 480px;
-            background: var(--surface);
-            border-radius: 24px;
-            box-shadow: var(--shadow-lg);
-            overflow: hidden;
-            min-height: 100vh;
-        }
-
-        /* Header */
-        .header {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: white;
-            padding: 28px 24px;
-            text-align: center;
-        }
-
-        .header-logo {
-            width: 64px;
-            height: 64px;
-            margin: 0 auto 16px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            backdrop-filter: blur(10px);
-        }
-
-        .header h1 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 6px;
-            letter-spacing: -0.5px;
-        }
-
-        .header p {
-            font-size: 0.875rem;
-            opacity: 0.9;
-            font-weight: 300;
-        }
-
-        /* Timer Display */
-        .timer-section {
-            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-            padding: 32px 24px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .timer-section::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
-            animation: pulse 3s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); opacity: 0.5; }
-            50% { transform: scale(1.1); opacity: 0.8; }
-        }
-
-        .timer-label {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: #94a3b8;
-            margin-bottom: 12px;
-            position: relative;
-        }
-
-        .timer-display {
-            font-size: 3rem;
-            font-weight: 700;
-            color: white;
-            font-variant-numeric: tabular-nums;
-            letter-spacing: 3px;
-            position: relative;
-            text-shadow: 0 0 30px rgba(99, 102, 241, 0.5);
-        }
-
-        .timer-category {
-            font-size: 1rem;
-            color: #94a3b8;
-            margin-top: 12px;
-            position: relative;
-            min-height: 24px;
-            font-weight: 500;
-        }
-
-        .timer-section.active {
-            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
-        }
-
-        .timer-section.active .timer-display {
-            text-shadow: 0 0 30px rgba(16, 185, 129, 0.5);
-            animation: timerPulse 2s infinite;
-        }
-
-        @keyframes timerPulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.85; }
-        }
-
-        /* Page Content */
-        .page-content {
-            display: none;
-            padding-bottom: 80px;
-        }
-
-        .page-content.active {
-            display: block;
-        }
-
-        /* Categories Section */
-        .categories-section {
-            padding: 28px 24px;
-        }
-
-        .section-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
-
-        .section-title {
-            font-size: 1.125rem;
-            font-weight: 600;
-            color: var(--text);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .section-title::before {
-            content: '';
-            width: 4px;
-            height: 22px;
-            background: linear-gradient(180deg, var(--primary) 0%, var(--primary-light) 100%);
-            border-radius: 2px;
-        }
-
-        .status-indicator {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--border);
-            transition: all 0.3s ease;
-        }
-
-        .status-dot.active {
-            background: var(--success);
-            box-shadow: 0 0 10px var(--success);
-            animation: statusPulse 2s infinite;
-        }
-
-        @keyframes statusPulse {
-            0%, 100% { box-shadow: 0 0 10px var(--success); }
-            50% { box-shadow: 0 0 20px var(--success); }
-        }
-
-        /* Categories Grid */
-        .categories-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-        }
-
-        .category-card {
-            background: var(--surface);
-            border: 2px solid var(--border);
-            border-radius: 16px;
-            padding: 16px 10px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .category-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, transparent 0%, rgba(99, 102, 241, 0.05) 100%);
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .category-card:hover {
-            border-color: var(--primary-light);
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .category-card:hover::before {
-            opacity: 1;
-        }
-
-        .category-card.active {
-            border-color: var(--primary);
-            background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
-            box-shadow: var(--shadow-glow);
-            transform: translateY(-4px);
-        }
-
-        .category-card.active::before {
-            opacity: 1;
-        }
-
-        .category-icon {
-            width: 42px;
-            height: 42px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.25rem;
-            position: relative;
-            z-index: 1;
-            transition: all 0.3s ease;
-        }
-
-        .category-card.work .category-icon { background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%); }
-        .category-card.break .category-icon { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); }
-        .category-card.road .category-icon { background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); }
-        .category-card.service .category-icon { background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%); }
-        .category-card.finish .category-icon { background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%); }
-
-        .category-card.active .category-icon {
-            transform: scale(1.1);
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-        }
-
-        .category-name {
-            font-size: 0.65rem;
-            font-weight: 600;
-            text-align: center;
-            color: var(--text);
-            line-height: 1.3;
-            position: relative;
-            z-index: 1;
-            transition: color 0.3s ease;
-        }
-
-        .category-card.active .category-name {
-            color: var(--primary-dark);
-        }
-
-        .category-time {
-            font-size: 0.625rem;
-            color: var(--text-secondary);
-            font-variant-numeric: tabular-nums;
-            position: relative;
-            z-index: 1;
-            opacity: 0;
-            transform: translateY(10px);
-            transition: all 0.3s ease;
-        }
-
-        .category-card.active .category-time {
-            opacity: 1;
-            transform: translateY(0);
-            color: var(--primary);
-            font-weight: 600;
-        }
-
-        /* Finish Button - Full Width */
-        .finish-btn-grid {
-            grid-column: span 4;
-            background: linear-gradient(135deg, var(--danger) 0%, var(--danger-dark) 100%);
-            color: white;
-            border: none;
-            border-radius: 16px;
-            padding: 20px 10px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
-            min-height: 60px;
-        }
-
-        .finish-btn-grid:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.5);
-        }
-
-        .finish-btn-grid:active {
-            transform: translateY(-2px);
-        }
-
-        .finish-btn-grid .icon {
-            font-size: 1.5rem;
-            animation: finishIcon 2s infinite;
-        }
-
-        .finish-btn-grid .label {
-            font-size: 1rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        @keyframes finishIcon {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-
-        /* Summary Stats */
-        .summary-stats {
-            margin-top: 24px;
-            padding: 24px;
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-            border-radius: 20px;
-            border: 1px solid var(--border);
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px 16px;
-        }
-
-        .stat-item {
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .stat-value {
-            font-size: 1.75rem;
-            font-weight: 700;
-            font-variant-numeric: tabular-nums;
-            letter-spacing: -0.5px;
-        }
-
-        .stat-item.work .stat-value { color: var(--primary); }
-        .stat-item.break .stat-value { color: var(--warning); }
-        .stat-item.road .stat-value { color: var(--success); }
-        .stat-item.service .stat-value { color: var(--service); }
-
-        .stat-label {
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-weight: 500;
-        }
-
-        .stat-label .emoji {
-            font-size: 1rem;
-        }
-
-        /* Reports Section */
-        .reports-section {
-            padding: 28px 24px;
-        }
-
-        .period-selector {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 20px;
-        }
-
-        .period-btn {
-            flex: 1;
-            padding: 12px 16px;
-            background: var(--surface);
-            border: 2px solid var(--border);
-            border-radius: 10px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            color: var(--text-secondary);
-        }
-
-        .period-btn.active {
-            border-color: var(--primary);
-            color: var(--primary);
-            background: rgba(99, 102, 241, 0.05);
-        }
-
-        .period-btn:hover {
-            border-color: var(--primary-light);
-        }
-
-        /* Date Picker Section */
-        .date-picker-section {
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 24px;
-        }
-
-        .date-picker-label {
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: var(--text);
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .date-picker-label .icon {
-            font-size: 1.25rem;
-        }
-
-        .date-input {
-            width: 100%;
-            padding: 14px 16px;
-            border: 2px solid var(--border);
-            border-radius: 12px;
-            font-size: 1rem;
-            font-family: 'Inter', sans-serif;
-            color: var(--text);
-            background: var(--surface);
-            cursor: pointer;
-            transition: all 0.2s ease;
-            margin-bottom: 12px;
-        }
-
-        .date-input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-        }
-
-        .date-range-inputs {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .date-input-wrapper {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .date-input-wrapper label {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        .month-selector {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-        }
-
-        .month-btn {
-            padding: 12px 8px;
-            background: var(--surface);
-            border: 2px solid var(--border);
-            border-radius: 10px;
-            font-size: 0.75rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            color: var(--text-secondary);
-        }
-
-        .month-btn.active {
-            border-color: var(--primary);
-            color: var(--primary);
-            background: rgba(99, 102, 241, 0.1);
-        }
-
-        .month-btn:hover {
-            border-color: var(--primary-light);
-        }
-
-        .selected-period-info {
-            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-            border: 1px solid var(--primary-light);
-            border-radius: 12px;
-            padding: 14px 16px;
-            margin-top: 16px;
-            text-align: center;
-        }
-
-        .selected-period-info .label {
-            font-size: 0.75rem;
-            color: var(--primary-dark);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px;
-        }
-
-        .selected-period-info .value {
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: var(--primary);
-        }
-
-        /* Export Section */
-        .export-section {
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 24px;
-        }
-
-        .export-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 16px;
-        }
-
-        .export-title {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--text);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .export-formats {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-
-        .export-btn {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            padding: 16px 12px;
-            border: 2px solid var(--border);
-            border-radius: 12px;
-            background: var(--surface);
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .export-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow);
-        }
-
-        .export-btn.pdf { border-color: var(--pdf); }
-        .export-btn.pdf:hover { background: rgba(244, 63, 94, 0.1); }
-        .export-btn.pdf .icon { color: var(--pdf); }
-
-        .export-btn.xls { border-color: var(--xls); }
-        .export-btn.xls:hover { background: rgba(34, 197, 94, 0.1); }
-        .export-btn.xls .icon { color: var(--xls); }
-
-        .export-btn.csv { border-color: var(--csv); }
-        .export-btn.csv:hover { background: rgba(59, 130, 246, 0.1); }
-        .export-btn.csv .icon { color: var(--csv); }
-
-        .export-btn .icon {
-            font-size: 1.5rem;
-            font-weight: 700;
-        }
-
-        .export-btn .label {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--text);
-        }
-
-        .export-share {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            padding-top: 16px;
-            border-top: 1px solid var(--border);
-        }
-
-        .share-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 14px 16px;
-            border: none;
-            border-radius: 10px;
-            font-size: 0.8125rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            color: white;
-        }
-
-        .share-btn.telegram {
-            background: linear-gradient(135deg, var(--telegram) 0%, #1a7db0 100%);
-        }
-
-        .share-btn.telegram:hover {
-            box-shadow: 0 4px 12px rgba(34, 158, 217, 0.4);
-            transform: translateY(-2px);
-        }
-
-        .share-btn.email {
-            background: linear-gradient(135deg, var(--email) 0%, #c53026 100%);
-        }
-
-        .share-btn.email:hover {
-            box-shadow: 0 4px 12px rgba(234, 67, 53, 0.4);
-            transform: translateY(-2px);
-        }
-
-        .share-btn.vk {
-            background: linear-gradient(135deg, var(--vk) 0%, #0055cc 100%);
-        }
-
-        .share-btn.vk:hover {
-            box-shadow: 0 4px 12px rgba(0, 119, 255, 0.4);
-            transform: translateY(-2px);
-        }
-
-        .report-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 16px;
-            box-shadow: var(--shadow);
-        }
-
-        .report-card.highlight {
-            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-            border-color: var(--success);
-        }
-
-        .report-card.warning {
-            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-            border-color: var(--warning);
-        }
-
-        .report-card.info {
-            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-            border-color: var(--primary);
-        }
-
-        .report-card.service {
-            background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
-            border-color: var(--service);
-        }
-
-        .report-header {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--text);
-        }
-
-        .report-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-        }
-
-        .report-row:last-child {
-            border-bottom: none;
-        }
-
-        .report-row .label {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-        }
-
-        .report-row .value {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--text);
-            font-variant-numeric: tabular-nums;
-        }
-
-        .report-row.total .label {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--text);
-        }
-
-        .report-row.total .value {
-            font-size: 1.25rem;
-            color: var(--success);
-        }
-
-        .breakdown-list {
-            margin-top: 16px;
-            padding-top: 16px;
-            border-top: 1px dashed var(--border);
-        }
-
-        .breakdown-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            font-size: 0.8125rem;
-        }
-
-        .breakdown-item .name {
-            color: var(--text-secondary);
-        }
-
-        .breakdown-item .time {
-            font-weight: 500;
-            color: var(--text);
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--text-secondary);
-        }
-
-        .empty-state .icon {
-            font-size: 3rem;
-            margin-bottom: 16px;
-            opacity: 0.5;
-        }
-
-        .empty-state p {
-            font-size: 0.875rem;
-        }
-
-        /* Navigation - Full Clickable Area */
-        .nav-tabs {
-            display: flex;
-            background: var(--surface);
-            border-top: 1px solid var(--border);
-            position: fixed;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 100%;
-            max-width: 480px;
-            z-index: 100;
-        }
-
-        .nav-tab {
-            flex: 1;
-            padding: 20px 16px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: var(--text-secondary);
-            transition: all 0.2s ease;
-            border-bottom: 3px solid transparent;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            width: 100%;
-        }
-
-        .nav-tab.active {
-            color: var(--primary);
-            border-bottom-color: var(--primary);
-            background: rgba(99, 102, 241, 0.05);
-        }
-
-        .nav-tab:hover {
-            color: var(--primary);
-            background: rgba(99, 102, 241, 0.05);
-        }
-
-        .nav-tab span {
-            pointer-events: none;
-        }
-
-        /* Modal */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            backdrop-filter: blur(4px);
-        }
-
-        .modal-overlay.active {
-            display: flex;
-        }
-
-        .modal {
-            background: var(--surface);
-            border-radius: 20px;
-            padding: 28px;
-            max-width: 400px;
-            width: 100%;
-            max-height: 80vh;
-            overflow-y: auto;
-            animation: modalSlide 0.3s ease;
-        }
-
-        @keyframes modalSlide {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .modal-header {
-            text-align: center;
-            margin-bottom: 24px;
-        }
-
-        .modal-header h2 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: var(--text);
-            margin-bottom: 8px;
-        }
-
-        .modal-header p {
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-        }
-
-        .work-time-info {
-            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-            border-radius: 12px;
-            padding: 16px;
-            margin: 16px 0;
-            border: 1px solid var(--border);
-        }
-
-        .work-time-info .time-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            font-size: 0.875rem;
-        }
-
-        .work-time-info .time-row:first-child {
-            border-bottom: 1px dashed var(--border);
-            margin-bottom: 8px;
-            padding-bottom: 12px;
-        }
-
-        .work-time-info .label {
-            color: var(--text-secondary);
-        }
-
-        .work-time-info .value {
-            font-weight: 600;
-            color: var(--text);
-        }
-
-        .modal-close {
-            width: 100%;
-            padding: 16px;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            margin-top: 20px;
-        }
-
-        .modal-close:hover {
-            background: var(--primary-dark);
-        }
-
-        /* Toast Notification */
-        .toast {
-            position: fixed;
-            bottom: 100px;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            background: var(--text);
-            color: white;
-            padding: 14px 24px;
-            border-radius: 12px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            opacity: 0;
-            transition: all 0.3s ease;
-            z-index: 2000;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            box-shadow: var(--shadow-lg);
-        }
-
-        .toast.active {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
-
-        .toast.success {
-            background: var(--success);
-        }
-
-        .toast.error {
-            background: var(--danger);
-        }
-
-        /* Responsive */
-        @media (max-width: 400px) {
-            .categories-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-            
-            .finish-btn-grid {
-                grid-column: span 3;
-            }
-            
-            .stats-grid {
-                gap: 16px 12px;
-            }
-            
-            .stat-value {
-                font-size: 1.5rem;
-            }
-            
-            .export-formats {
-                grid-template-columns: repeat(3, 1fr);
-            }
-            
-            .export-share {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .timer-display {
-                font-size: 2.5rem;
-            }
-            
-            .category-card {
-                padding: 14px 8px;
-            }
-            
-            .month-selector {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        /* Animations */
-        .fade-in {
-            animation: fadeIn 0.5s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-        }
-
-        .shake {
-            animation: shake 0.3s ease;
-        }
-    </style>
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- jsPDF for PDF generation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+<!-- SheetJS for XLS/CSV -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+* {
+margin: 0;
+padding: 0;
+box-sizing: border-box;
+}
+:root {
+--primary: #6366f1;
+--primary-light: #818cf8;
+--primary-dark: #4f46e5;
+--success: #10b981;
+--success-light: #34d399;
+--warning: #f59e0b;
+--warning-light: #fbbf24;
+--danger: #ef4444;
+--danger-dark: #dc2626;
+--service: #8b5cf6;
+--service-light: #a78bfa;
+--vk: #0077FF;
+--pdf: #f43f5e;
+--xls: #22c55e;
+--csv: #3b82f6;
+--telegram: #229ED9;
+--email: #ea4335;
+--bg: #f8fafc;
+--surface: #ffffff;
+--text: #1e293b;
+--text-secondary: #64748b;
+--border: #e2e8f0;
+--shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+--shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+--shadow-glow: 0 0 20px rgb(99 102 241 / 0.3);
+}
+body {
+font-family: 'Inter', sans-serif;
+background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%);
+min-height: 100vh;
+display: flex;
+align-items: center;
+justify-content: center;
+padding: 20px;
+overflow-x: hidden;
+}
+.app-container {
+width: 100%;
+max-width: 480px;
+background: var(--surface);
+border-radius: 24px;
+box-shadow: var(--shadow-lg);
+overflow: hidden;
+min-height: 100vh;
+position: relative;
+}
+/* Header */
+.header {
+background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+color: white;
+padding: 28px 24px;
+text-align: center;
+}
+.header-logo {
+width: 64px;
+height: 64px;
+margin: 0 auto 16px;
+background: rgba(255, 255, 255, 0.2);
+border-radius: 50%;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 2rem;
+backdrop-filter: blur(10px);
+}
+.header h1 {
+font-size: 1.5rem;
+font-weight: 700;
+margin-bottom: 6px;
+letter-spacing: -0.5px;
+}
+.header p {
+font-size: 0.875rem;
+opacity: 0.9;
+font-weight: 300;
+}
+/* Timer Display */
+.timer-section {
+background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+padding: 32px 24px;
+text-align: center;
+position: relative;
+overflow: hidden;
+}
+.timer-section::before {
+content: '';
+position: absolute;
+top: -50%;
+left: -50%;
+width: 200%;
+height: 200%;
+background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
+animation: pulse 3s infinite;
+}
+@keyframes pulse {
+0%, 100% { transform: scale(1); opacity: 0.5; }
+50% { transform: scale(1.1); opacity: 0.8; }
+}
+.timer-label {
+font-size: 0.75rem;
+text-transform: uppercase;
+letter-spacing: 2px;
+color: #94a3b8;
+margin-bottom: 12px;
+position: relative;
+}
+.timer-display {
+font-size: 3rem;
+font-weight: 700;
+color: white;
+font-variant-numeric: tabular-nums;
+letter-spacing: 3px;
+position: relative;
+text-shadow: 0 0 30px rgba(99, 102, 241, 0.5);
+}
+.timer-category {
+font-size: 1rem;
+color: #94a3b8;
+margin-top: 12px;
+position: relative;
+min-height: 24px;
+font-weight: 500;
+}
+.timer-section.active {
+background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+}
+.timer-section.active .timer-display {
+text-shadow: 0 0 30px rgba(16, 185, 129, 0.5);
+animation: timerPulse 2s infinite;
+}
+@keyframes timerPulse {
+0%, 100% { opacity: 1; }
+50% { opacity: 0.85; }
+}
+/* Page Content */
+.page-content {
+display: none;
+padding-bottom: 80px;
+transition: transform 0.3s ease, opacity 0.3s ease;
+}
+.page-content.active {
+display: block;
+}
+.page-content.swiping {
+position: absolute;
+top: 0;
+left: 0;
+width: 100%;
+}
+/* Categories Section */
+.categories-section {
+padding: 28px 24px;
+}
+.section-header {
+display: flex;
+align-items: center;
+justify-content: space-between;
+margin-bottom: 20px;
+}
+.section-title {
+font-size: 1.125rem;
+font-weight: 600;
+color: var(--text);
+display: flex;
+align-items: center;
+gap: 10px;
+}
+.section-title::before {
+content: '';
+width: 4px;
+height: 22px;
+background: linear-gradient(180deg, var(--primary) 0%, var(--primary-light) 100%);
+border-radius: 2px;
+}
+.status-indicator {
+display: flex;
+align-items: center;
+gap: 6px;
+font-size: 0.75rem;
+color: var(--text-secondary);
+}
+.status-dot {
+width: 8px;
+height: 8px;
+border-radius: 50%;
+background: var(--border);
+transition: all 0.3s ease;
+}
+.status-dot.active {
+background: var(--success);
+box-shadow: 0 0 10px var(--success);
+animation: statusPulse 2s infinite;
+}
+@keyframes statusPulse {
+0%, 100% { box-shadow: 0 0 10px var(--success); }
+50% { box-shadow: 0 0 20px var(--success); }
+}
+/* Categories Grid */
+.categories-grid {
+display: grid;
+grid-template-columns: repeat(4, 1fr);
+gap: 12px;
+}
+.category-card {
+background: var(--surface);
+border: 2px solid var(--border);
+border-radius: 16px;
+padding: 16px 10px;
+cursor: pointer;
+transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 10px;
+position: relative;
+overflow: hidden;
+}
+.category-card::before {
+content: '';
+position: absolute;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background: linear-gradient(135deg, transparent 0%, rgba(99, 102, 241, 0.05) 100%);
+opacity: 0;
+transition: opacity 0.3s ease;
+}
+.category-card:hover {
+border-color: var(--primary-light);
+transform: translateY(-4px);
+box-shadow: var(--shadow-lg);
+}
+.category-card:hover::before {
+opacity: 1;
+}
+.category-card.active {
+border-color: var(--primary);
+background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+box-shadow: var(--shadow-glow);
+transform: translateY(-4px);
+}
+.category-card.active::before {
+opacity: 1;
+}
+.category-icon {
+width: 42px;
+height: 42px;
+border-radius: 10px;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 1.25rem;
+position: relative;
+z-index: 1;
+transition: all 0.3s ease;
+}
+.category-card.work .category-icon { background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%); }
+.category-card.break .category-icon { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); }
+.category-card.road .category-icon { background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); }
+.category-card.service .category-icon { background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%); }
+.category-card.finish .category-icon { background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%); }
+.category-card.active .category-icon {
+transform: scale(1.1);
+box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+.category-name {
+font-size: 0.65rem;
+font-weight: 600;
+text-align: center;
+color: var(--text);
+line-height: 1.3;
+position: relative;
+z-index: 1;
+transition: color 0.3s ease;
+}
+.category-card.active .category-name {
+color: var(--primary-dark);
+}
+.category-time {
+font-size: 0.625rem;
+color: var(--text-secondary);
+font-variant-numeric: tabular-nums;
+position: relative;
+z-index: 1;
+opacity: 0;
+transform: translateY(10px);
+transition: all 0.3s ease;
+}
+.category-card.active .category-time {
+opacity: 1;
+transform: translateY(0);
+color: var(--primary);
+font-weight: 600;
+}
+/* Finish Button - Full Width */
+.finish-btn-grid {
+grid-column: span 4;
+background: linear-gradient(135deg, var(--danger) 0%, var(--danger-dark) 100%);
+color: white;
+border: none;
+border-radius: 16px;
+padding: 20px 10px;
+cursor: pointer;
+transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+display: flex;
+flex-direction: row;
+align-items: center;
+justify-content: center;
+gap: 12px;
+box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+min-height: 60px;
+}
+.finish-btn-grid:hover {
+transform: translateY(-4px);
+box-shadow: 0 8px 25px rgba(239, 68, 68, 0.5);
+}
+.finish-btn-grid:active {
+transform: translateY(-2px);
+}
+.finish-btn-grid .icon {
+font-size: 1.5rem;
+animation: finishIcon 2s infinite;
+}
+.finish-btn-grid .label {
+font-size: 1rem;
+font-weight: 700;
+text-transform: uppercase;
+letter-spacing: 1px;
+}
+@keyframes finishIcon {
+0%, 100% { transform: scale(1); }
+50% { transform: scale(1.1); }
+}
+/* Summary Stats */
+.summary-stats {
+margin-top: 24px;
+padding: 24px;
+background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+border-radius: 20px;
+border: 1px solid var(--border);
+}
+.stats-grid {
+display: grid;
+grid-template-columns: repeat(2, 1fr);
+gap: 20px 16px;
+}
+.stat-item {
+text-align: center;
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 6px;
+}
+.stat-value {
+font-size: 1.75rem;
+font-weight: 700;
+font-variant-numeric: tabular-nums;
+letter-spacing: -0.5px;
+}
+.stat-item.work .stat-value { color: var(--primary); }
+.stat-item.break .stat-value { color: var(--warning); }
+.stat-item.road .stat-value { color: var(--success); }
+.stat-item.service .stat-value { color: var(--service); }
+.stat-label {
+font-size: 0.7rem;
+color: var(--text-secondary);
+text-transform: uppercase;
+letter-spacing: 0.5px;
+display: flex;
+align-items: center;
+gap: 5px;
+font-weight: 500;
+}
+.stat-label .emoji {
+font-size: 1rem;
+}
+/* Weekly Productivity */
+.weekly-productivity {
+margin-top: 20px;
+padding: 20px;
+background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+border-radius: 16px;
+border: 1px solid var(--service-light);
+}
+.productivity-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 12px;
+}
+.productivity-title {
+font-size: 0.875rem;
+font-weight: 600;
+color: var(--text);
+display: flex;
+align-items: center;
+gap: 6px;
+}
+.productivity-value {
+font-size: 1.25rem;
+font-weight: 700;
+color: var(--service);
+}
+.productivity-bar {
+height: 12px;
+background: var(--border);
+border-radius: 6px;
+overflow: hidden;
+margin-bottom: 8px;
+}
+.productivity-fill {
+height: 100%;
+border-radius: 6px;
+transition: width 0.5s ease, background-color 0.3s ease;
+}
+.productivity-low { background: linear-gradient(90deg, var(--danger) 0%, var(--warning) 100%); }
+.productivity-medium { background: linear-gradient(90deg, var(--warning) 0%, var(--success) 100%); }
+.productivity-high { background: linear-gradient(90deg, var(--success) 0%, var(--success-light) 100%); }
+.productivity-complete { background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%); }
+.productivity-details {
+display: flex;
+justify-content: space-between;
+font-size: 0.75rem;
+color: var(--text-secondary);
+}
+.productivity-reset {
+font-size: 0.7rem;
+color: var(--text-secondary);
+text-align: center;
+margin-top: 8px;
+}
+/* Reports Section */
+.reports-section {
+padding: 28px 24px;
+}
+.period-selector {
+display: flex;
+gap: 8px;
+margin-bottom: 20px;
+}
+.period-btn {
+flex: 1;
+padding: 12px 16px;
+background: var(--surface);
+border: 2px solid var(--border);
+border-radius: 10px;
+font-size: 0.875rem;
+font-weight: 500;
+cursor: pointer;
+transition: all 0.2s ease;
+color: var(--text-secondary);
+}
+.period-btn.active {
+border-color: var(--primary);
+color: var(--primary);
+background: rgba(99, 102, 241, 0.05);
+}
+.period-btn:hover {
+border-color: var(--primary-light);
+}
+/* Date Picker Section */
+.date-picker-section {
+background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+border: 1px solid var(--border);
+border-radius: 16px;
+padding: 20px;
+margin-bottom: 24px;
+}
+.date-picker-label {
+font-size: 0.875rem;
+font-weight: 600;
+color: var(--text);
+margin-bottom: 12px;
+display: flex;
+align-items: center;
+gap: 8px;
+}
+.date-picker-label .icon {
+font-size: 1.25rem;
+}
+.date-input {
+width: 100%;
+padding: 14px 16px;
+border: 2px solid var(--border);
+border-radius: 12px;
+font-size: 1rem;
+font-family: 'Inter', sans-serif;
+color: var(--text);
+background: var(--surface);
+cursor: pointer;
+transition: all 0.2s ease;
+margin-bottom: 12px;
+}
+.date-input:focus {
+outline: none;
+border-color: var(--primary);
+box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+.date-range-inputs {
+display: flex;
+flex-direction: column;
+gap: 12px;
+}
+.date-input-wrapper {
+display: flex;
+flex-direction: column;
+gap: 6px;
+}
+.date-input-wrapper label {
+font-size: 0.75rem;
+color: var(--text-secondary);
+font-weight: 500;
+}
+.month-selector {
+display: grid;
+grid-template-columns: repeat(3, 1fr);
+gap: 10px;
+}
+.month-btn {
+padding: 12px 8px;
+background: var(--surface);
+border: 2px solid var(--border);
+border-radius: 10px;
+font-size: 0.75rem;
+font-weight: 500;
+cursor: pointer;
+transition: all 0.2s ease;
+color: var(--text-secondary);
+}
+.month-btn.active {
+border-color: var(--primary);
+color: var(--primary);
+background: rgba(99, 102, 241, 0.1);
+}
+.month-btn:hover {
+border-color: var(--primary-light);
+}
+.selected-period-info {
+background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+border: 1px solid var(--primary-light);
+border-radius: 12px;
+padding: 14px 16px;
+margin-top: 16px;
+text-align: center;
+}
+.selected-period-info .label {
+font-size: 0.75rem;
+color: var(--primary-dark);
+text-transform: uppercase;
+letter-spacing: 0.5px;
+margin-bottom: 4px;
+}
+.selected-period-info .value {
+font-size: 0.95rem;
+font-weight: 600;
+color: var(--primary);
+}
+/* Export Section */
+.export-section {
+background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+border: 1px solid var(--border);
+border-radius: 16px;
+padding: 20px;
+margin-bottom: 24px;
+}
+.export-header {
+display: flex;
+align-items: center;
+justify-content: space-between;
+margin-bottom: 16px;
+}
+.export-title {
+font-size: 1rem;
+font-weight: 600;
+color: var(--text);
+display: flex;
+align-items: center;
+gap: 8px;
+}
+.export-formats {
+display: grid;
+grid-template-columns: repeat(3, 1fr);
+gap: 12px;
+margin-bottom: 16px;
+}
+.export-btn {
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 8px;
+padding: 16px 12px;
+border: 2px solid var(--border);
+border-radius: 12px;
+background: var(--surface);
+cursor: pointer;
+transition: all 0.2s ease;
+}
+.export-btn:hover {
+transform: translateY(-2px);
+box-shadow: var(--shadow);
+}
+.export-btn.pdf { border-color: var(--pdf); }
+.export-btn.pdf:hover { background: rgba(244, 63, 94, 0.1); }
+.export-btn.pdf .icon { color: var(--pdf); }
+.export-btn.xls { border-color: var(--xls); }
+.export-btn.xls:hover { background: rgba(34, 197, 94, 0.1); }
+.export-btn.xls .icon { color: var(--xls); }
+.export-btn.csv { border-color: var(--csv); }
+.export-btn.csv:hover { background: rgba(59, 130, 246, 0.1); }
+.export-btn.csv .icon { color: var(--csv); }
+.export-btn .icon {
+font-size: 1.5rem;
+font-weight: 700;
+}
+.export-btn .label {
+font-size: 0.75rem;
+font-weight: 600;
+color: var(--text);
+}
+.export-share {
+display: grid;
+grid-template-columns: repeat(3, 1fr);
+gap: 12px;
+padding-top: 16px;
+border-top: 1px solid var(--border);
+}
+.share-btn {
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 8px;
+padding: 14px 16px;
+border: none;
+border-radius: 10px;
+font-size: 0.8125rem;
+font-weight: 600;
+cursor: pointer;
+transition: all 0.2s ease;
+color: white;
+}
+.share-btn.telegram {
+background: linear-gradient(135deg, var(--telegram) 0%, #1a7db0 100%);
+}
+.share-btn.telegram:hover {
+box-shadow: 0 4px 12px rgba(34, 158, 217, 0.4);
+transform: translateY(-2px);
+}
+.share-btn.email {
+background: linear-gradient(135deg, var(--email) 0%, #c53026 100%);
+}
+.share-btn.email:hover {
+box-shadow: 0 4px 12px rgba(234, 67, 53, 0.4);
+transform: translateY(-2px);
+}
+.share-btn.vk {
+background: linear-gradient(135deg, var(--vk) 0%, #0055cc 100%);
+}
+.share-btn.vk:hover {
+box-shadow: 0 4px 12px rgba(0, 119, 255, 0.4);
+transform: translateY(-2px);
+}
+.report-card {
+background: var(--surface);
+border: 1px solid var(--border);
+border-radius: 16px;
+padding: 20px;
+margin-bottom: 16px;
+box-shadow: var(--shadow);
+}
+.report-card.highlight {
+background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+border-color: var(--success);
+}
+.report-card.warning {
+background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+border-color: var(--warning);
+}
+.report-card.info {
+background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+border-color: var(--primary);
+}
+.report-card.service {
+background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+border-color: var(--service);
+}
+.report-header {
+font-size: 1rem;
+font-weight: 600;
+margin-bottom: 16px;
+display: flex;
+align-items: center;
+gap: 8px;
+color: var(--text);
+}
+.report-row {
+display: flex;
+justify-content: space-between;
+align-items: center;
+padding: 12px 0;
+border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+.report-row:last-child {
+border-bottom: none;
+}
+.report-row .label {
+font-size: 0.875rem;
+color: var(--text-secondary);
+}
+.report-row .value {
+font-size: 1rem;
+font-weight: 600;
+color: var(--text);
+font-variant-numeric: tabular-nums;
+}
+.report-row.total .label {
+font-size: 1rem;
+font-weight: 600;
+color: var(--text);
+}
+.report-row.total .value {
+font-size: 1.25rem;
+color: var(--success);
+}
+.breakdown-list {
+margin-top: 16px;
+padding-top: 16px;
+border-top: 1px dashed var(--border);
+}
+.breakdown-item {
+display: flex;
+justify-content: space-between;
+padding: 8px 0;
+font-size: 0.8125rem;
+}
+.breakdown-item .name {
+color: var(--text-secondary);
+}
+.breakdown-item .time {
+font-weight: 500;
+color: var(--text);
+}
+.empty-state {
+text-align: center;
+padding: 40px 20px;
+color: var(--text-secondary);
+}
+.empty-state .icon {
+font-size: 3rem;
+margin-bottom: 16px;
+opacity: 0.5;
+}
+.empty-state p {
+font-size: 0.875rem;
+}
+/* Navigation - Full Clickable Area */
+.nav-tabs {
+display: flex;
+background: var(--surface);
+border-top: 1px solid var(--border);
+position: fixed;
+bottom: 0;
+left: 50%;
+transform: translateX(-50%);
+width: 100%;
+max-width: 480px;
+z-index: 100;
+}
+.nav-tab {
+flex: 1;
+padding: 20px 16px;
+background: none;
+border: none;
+cursor: pointer;
+font-size: 0.875rem;
+font-weight: 500;
+color: var(--text-secondary);
+transition: all 0.2s ease;
+border-bottom: 3px solid transparent;
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 8px;
+width: 100%;
+}
+.nav-tab.active {
+color: var(--primary);
+border-bottom-color: var(--primary);
+background: rgba(99, 102, 241, 0.05);
+}
+.nav-tab:hover {
+color: var(--primary);
+background: rgba(99, 102, 241, 0.05);
+}
+.nav-tab span {
+pointer-events: none;
+}
+/* Modal */
+.modal-overlay {
+display: none;
+position: fixed;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background: rgba(0,0,0,0.5);
+z-index: 1000;
+align-items: center;
+justify-content: center;
+padding: 20px;
+backdrop-filter: blur(4px);
+}
+.modal-overlay.active {
+display: flex;
+}
+.modal {
+background: var(--surface);
+border-radius: 20px;
+padding: 28px;
+max-width: 400px;
+width: 100%;
+max-height: 80vh;
+overflow-y: auto;
+animation: modalSlide 0.3s ease;
+}
+@keyframes modalSlide {
+from {
+opacity: 0;
+transform: translateY(20px);
+}
+to {
+opacity: 1;
+transform: translateY(0);
+}
+}
+.modal-header {
+text-align: center;
+margin-bottom: 24px;
+}
+.modal-header h2 {
+font-size: 1.5rem;
+font-weight: 600;
+color: var(--text);
+margin-bottom: 8px;
+}
+.modal-header p {
+color: var(--text-secondary);
+font-size: 0.875rem;
+}
+.work-time-info {
+background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+border-radius: 12px;
+padding: 16px;
+margin: 16px 0;
+border: 1px solid var(--border);
+}
+.work-time-info .time-row {
+display: flex;
+justify-content: space-between;
+padding: 8px 0;
+font-size: 0.875rem;
+}
+.work-time-info .time-row:first-child {
+border-bottom: 1px dashed var(--border);
+margin-bottom: 8px;
+padding-bottom: 12px;
+}
+.work-time-info .label {
+color: var(--text-secondary);
+}
+.work-time-info .value {
+font-weight: 600;
+color: var(--text);
+}
+.modal-close {
+width: 100%;
+padding: 16px;
+background: var(--primary);
+color: white;
+border: none;
+border-radius: 12px;
+font-size: 1rem;
+font-weight: 600;
+cursor: pointer;
+transition: all 0.2s ease;
+margin-top: 20px;
+}
+.modal-close:hover {
+background: var(--primary-dark);
+}
+/* Toast Notification */
+.toast {
+position: fixed;
+bottom: 100px;
+left: 50%;
+transform: translateX(-50%) translateY(100px);
+background: var(--text);
+color: white;
+padding: 14px 24px;
+border-radius: 12px;
+font-size: 0.875rem;
+font-weight: 500;
+opacity: 0;
+transition: all 0.3s ease;
+z-index: 2000;
+display: flex;
+align-items: center;
+gap: 10px;
+box-shadow: var(--shadow-lg);
+}
+.toast.active {
+opacity: 1;
+transform: translateX(-50%) translateY(0);
+}
+.toast.success {
+background: var(--success);
+}
+.toast.error {
+background: var(--danger);
+}
+/* Responsive */
+@media (max-width: 400px) {
+.categories-grid {
+grid-template-columns: repeat(3, 1fr);
+}
+.finish-btn-grid {
+grid-column: span 3;
+}
+.stats-grid {
+gap: 16px 12px;
+}
+.stat-value {
+font-size: 1.5rem;
+}
+.export-formats {
+grid-template-columns: repeat(3, 1fr);
+}
+.export-share {
+grid-template-columns: repeat(2, 1fr);
+}
+.timer-display {
+font-size: 2.5rem;
+}
+.category-card {
+padding: 14px 8px;
+}
+.month-selector {
+grid-template-columns: repeat(2, 1fr);
+}
+}
+/* Animations */
+.fade-in {
+animation: fadeIn 0.5s ease;
+}
+@keyframes fadeIn {
+from { opacity: 0; transform: translateY(20px); }
+to { opacity: 1; transform: translateY(0); }
+}
+@keyframes shake {
+0%, 100% { transform: translateX(0); }
+25% { transform: translateX(-5px); }
+75% { transform: translateX(5px); }
+}
+.shake {
+animation: shake 0.3s ease;
+}
+</style>
 </head>
 <body>
-    <div class="app-container">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-logo">⏱️</div>
-            <h1>Бюджет Времени</h1>
-            <p id="currentDate"></p>
-        </header>
-
-        <!-- Tracker Page -->
-        <div id="trackerPage" class="page-content active">
-            <!-- Timer Display -->
-            <section class="timer-section" id="timerSection">
-                <div class="timer-label">Текущее время</div>
-                <div class="timer-display" id="timerDisplay">00:00:00</div>
-                <div class="timer-category" id="timerCategory">Нет активной задачи</div>
-            </section>
-
-            <!-- Categories -->
-            <section class="categories-section">
-                <div class="section-header">
-                    <h2 class="section-title">Категории занятости</h2>
-                    <div class="status-indicator">
-                        <div class="status-dot" id="statusDot"></div>
-                        <span id="statusText">Ожидание</span>
-                    </div>
-                </div>
-
-                <div class="categories-grid" id="categoriesGrid">
-                    <!-- Row 1 -->
-                    <div class="category-card work" data-id="1" onclick="selectCategory(1)">
-                        <div class="category-icon">🏛️</div>
-                        <div class="category-name">Работа ПСТГУ</div>
-                        <div class="category-time" id="time-1">00:00</div>
-                    </div>
-                    
-                    <div class="category-card work" data-id="2" onclick="selectCategory(2)">
-                        <div class="category-icon">🏢</div>
-                        <div class="category-name">Работа ПСТБИ</div>
-                        <div class="category-time" id="time-2">00:00</div>
-                    </div>
-                    
-                    <div class="category-card work" data-id="3" onclick="selectCategory(3)">
-                        <div class="category-icon">👥</div>
-                        <div class="category-name">Собрание ПСТГУ</div>
-                        <div class="category-time" id="time-3">00:00</div>
-                    </div>
-                    
-                    <div class="category-card work" data-id="4" onclick="selectCategory(4)">
-                        <div class="category-icon">🤝</div>
-                        <div class="category-name">Собрание ПСТБИ</div>
-                        <div class="category-time" id="time-4">00:00</div>
-                    </div>
-                    
-                    <!-- Row 2 -->
-                    <div class="category-card work" data-id="5" onclick="selectCategory(5)">
-                        <div class="category-icon">🏆</div>
-                        <div class="category-name">Олимпиады</div>
-                        <div class="category-time" id="time-5">00:00</div>
-                    </div>
-                    
-                    <div class="category-card work" data-id="6" onclick="selectCategory(6)">
-                        <div class="category-icon">🎓</div>
-                        <div class="category-name">Школы</div>
-                        <div class="category-time" id="time-6">00:00</div>
-                    </div>
-                    
-                    <div class="category-card service" data-id="7" onclick="selectCategory(7)">
-                        <div class="category-icon">⛪</div>
-                        <div class="category-name">Служба</div>
-                        <div class="category-time" id="time-7">00:00</div>
-                    </div>
-                    
-                    <div class="category-card road" data-id="9" onclick="selectCategory(9)">
-                        <div class="category-icon">🚗</div>
-                        <div class="category-name">Дорога</div>
-                        <div class="category-time" id="time-9">00:00</div>
-                    </div>
-                    
-                    <!-- Row 3 -->
-                    <div class="category-card break" data-id="8" onclick="selectCategory(8)">
-                        <div class="category-icon">☕</div>
-                        <div class="category-name">Перерыв</div>
-                        <div class="category-time" id="time-8">00:00</div>
-                    </div>
-                    
-                    <!-- Full Width Finish Button -->
-                    <button class="finish-btn-grid" onclick="finishWork()">
-                        <span class="icon">⏹️</span>
-                        <span class="label">Финиш</span>
-                    </button>
-                </div>
-
-                <!-- Summary Stats - Real-time -->
-                <div class="summary-stats">
-                    <div class="stats-grid">
-                        <div class="stat-item work">
-                            <div class="stat-value" id="statWork">0:00</div>
-                            <div class="stat-label"><span class="emoji">💼</span> Работа</div>
-                        </div>
-                        <div class="stat-item break">
-                            <div class="stat-value" id="statBreak">0:00</div>
-                            <div class="stat-label"><span class="emoji">☕</span> Перерыв</div>
-                        </div>
-                        <div class="stat-item road">
-                            <div class="stat-value" id="statRoad">0:00</div>
-                            <div class="stat-label"><span class="emoji">🚗</span> Дорога</div>
-                        </div>
-                        <div class="stat-item service">
-                            <div class="stat-value" id="statService">0:00</div>
-                            <div class="stat-label"><span class="emoji">⛪</span> Служба</div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <!-- Reports Page -->
-        <div id="reportsPage" class="page-content">
-            <section class="reports-section">
-                <h2 class="section-title">Отчёты</h2>
-                
-                <!-- Period Selector -->
-                <div class="period-selector">
-                    <button class="period-btn active" data-period="day" onclick="setPeriod('day')">День</button>
-                    <button class="period-btn" data-period="month" onclick="setPeriod('month')">Месяц</button>
-                    <button class="period-btn" data-period="range" onclick="setPeriod('range')">Период</button>
-                </div>
-
-                <!-- Date Picker Section -->
-                <div class="date-picker-section" id="datePickerSection">
-                    <div class="date-picker-label">
-                        <span class="icon">📅</span>
-                        <span id="datePickerLabel">Выберите дату</span>
-                    </div>
-                    
-                    <!-- Day Picker -->
-                    <div id="dayPicker">
-                        <input type="date" class="date-input" id="dayInput" onchange="selectDay()">
-                    </div>
-                    
-                    <!-- Month Picker -->
-                    <div id="monthPicker" style="display: none;">
-                        <div class="month-selector" id="monthSelector">
-                            <!-- Months will be generated by JS -->
-                        </div>
-                        <div class="selected-period-info" id="monthInfo" style="display: none;">
-                            <div class="label">Выбранный месяц</div>
-                            <div class="value" id="monthInfoValue"></div>
-                        </div>
-                    </div>
-                    
-                    <!-- Range Picker -->
-                    <div id="rangePicker" style="display: none;">
-                        <div class="date-range-inputs">
-                            <div class="date-input-wrapper">
-                                <label>📍 Дата начала</label>
-                                <input type="date" class="date-input" id="rangeStartInput" onchange="selectRange()">
-                            </div>
-                            <div class="date-input-wrapper">
-                                <label>🏁 Дата окончания</label>
-                                <input type="date" class="date-input" id="rangeEndInput" onchange="selectRange()">
-                            </div>
-                        </div>
-                        <div class="selected-period-info" id="rangeInfo" style="display: none;">
-                            <div class="label">Выбранный период</div>
-                            <div class="value" id="rangeInfoValue"></div>
-                        </div>
-                    </div>
-                    
-                    <!-- Selected Period Info -->
-                    <div class="selected-period-info" id="dayInfo" style="display: none;">
-                        <div class="label">Выбранная дата</div>
-                        <div class="value" id="dayInfoValue"></div>
-                    </div>
-                </div>
-
-                <!-- Export Section -->
-                <div class="export-section">
-                    <div class="export-header">
-                        <h3 class="export-title">📥 Экспорт отчёта</h3>
-                    </div>
-                    
-                    <div class="export-formats">
-                        <button class="export-btn pdf" onclick="exportReport('pdf')">
-                            <span class="icon">PDF</span>
-                            <span class="label">PDF</span>
-                        </button>
-                        <button class="export-btn xls" onclick="exportReport('xls')">
-                            <span class="icon">XLS</span>
-                            <span class="label">Excel</span>
-                        </button>
-                        <button class="export-btn csv" onclick="exportReport('csv')">
-                            <span class="icon">CSV</span>
-                            <span class="label">CSV</span>
-                        </button>
-                    </div>
-                    
-                    <div class="export-share">
-                        <button class="share-btn telegram" onclick="shareToTelegram()">
-                            <span>✈️</span>
-                            <span>Telegram</span>
-                        </button>
-                        <button class="share-btn email" onclick="shareToEmail()">
-                            <span>📧</span>
-                            <span>Email</span>
-                        </button>
-                        <button class="share-btn vk" onclick="shareToVK()">
-                            <span>🔵</span>
-                            <span>ВК</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div id="reportContent">
-                    <!-- Report will be generated by JS -->
-                </div>
-            </section>
-        </div>
-
-        <!-- Navigation -->
-        <nav class="nav-tabs">
-            <button class="nav-tab active" data-page="tracker" onclick="switchPage('tracker')">
-                <span>⏱️</span> Трекер
-            </button>
-            <button class="nav-tab" data-page="reports" onclick="switchPage('reports')">
-                <span>📊</span> Отчёты
-            </button>
-        </nav>
-    </div>
-
-    <!-- Summary Modal -->
-    <div class="modal-overlay" id="summaryModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h2>Рабочий день завершён</h2>
-                <p id="modalDate"></p>
-            </div>
-            
-            <!-- Work Time Info -->
-            <div class="work-time-info" id="workTimeInfo">
-                <div class="time-row">
-                    <span class="label">🕐 Начало рабочего дня</span>
-                    <span class="value" id="workStartTime">--:--</span>
-                </div>
-                <div class="time-row">
-                    <span class="label">🕐 Окончание рабочего дня</span>
-                    <span class="value" id="workEndTime">--:--</span>
-                </div>
-            </div>
-            
-            <div id="modalContent">
-                <!-- Summary content -->
-            </div>
-            <button class="modal-close" id="modalClose">Закрыть</button>
-        </div>
-    </div>
-
-    <!-- Toast Notification -->
-    <div class="toast" id="toast">
-        <span id="toastIcon">✓</span>
-        <span id="toastMessage">Успешно!</span>
-    </div>
-
-    <script>
-        // Categories configuration
-        const categories = [
-            { id: 1, name: 'Работа ПСТГУ', icon: '🏛️', type: 'work' },
-            { id: 2, name: 'Работа ПСТБИ', icon: '🏢', type: 'work' },
-            { id: 3, name: 'Собрание ПСТГУ', icon: '👥', type: 'work' },
-            { id: 4, name: 'Собрание ПСТБИ', icon: '🤝', type: 'work' },
-            { id: 5, name: 'Олимпиады', icon: '🏆', type: 'work' },
-            { id: 6, name: 'Школы', icon: '🎓', type: 'work' },
-            { id: 7, name: 'Служба', icon: '⛪', type: 'service' },
-            { id: 8, name: 'Перерыв', icon: '☕', type: 'break' },
-            { id: 9, name: 'Дорога', icon: '🚗', type: 'road' }
-        ];
-
-        // Month names in Russian
-        const monthNames = [
-            'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-            'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
-        ];
-
-        // State
-        let activeCategory = null;
-        let startTime = null;
-        let timerInterval = null;
-        let categoryTimes = {};
-        let records = JSON.parse(localStorage.getItem('timeRecords')) || [];
-        let currentPeriod = 'day';
-        let currentReportData = null;
-        let workDayStart = null;
-        let workDayEnd = null;
-        
-        // Date selection state
-        let selectedDate = new Date();
-        let selectedMonth = null;
-        let rangeStart = null;
-        let rangeEnd = null;
-
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            initDate();
-            initMonthPicker();
-            initDayInput();
-            initRangeInputs();
-            startTimer();
-            loadFromStorage();
-            renderReport('day');
-        });
-
-        // Initialize date
-        function initDate() {
-            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            document.getElementById('currentDate').textContent = new Date().toLocaleDateString('ru-RU', options);
-        }
-
-        // Initialize day input
-        function initDayInput() {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('dayInput').max = today;
-            document.getElementById('dayInput').value = today;
-            selectedDate = new Date();
-            updateDayInfo();
-        }
-
-        // Initialize range inputs
-        function initRangeInputs() {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('rangeStartInput').max = today;
-            document.getElementById('rangeEndInput').max = today;
-            document.getElementById('rangeEndInput').value = today;
-            
-            // Set start date to beginning of current month
-            const firstOfMonth = new Date();
-            firstOfMonth.setDate(1);
-            document.getElementById('rangeStartInput').value = firstOfMonth.toISOString().split('T')[0];
-            
-            rangeStart = firstOfMonth;
-            rangeEnd = new Date();
-            updateRangeInfo();
-        }
-
-        // Initialize month picker
-        function initMonthPicker() {
-            const container = document.getElementById('monthSelector');
-            const currentYear = new Date().getFullYear();
-            
-            container.innerHTML = monthNames.map((month, index) => `
-                <button class="month-btn" data-month="${index}" onclick="selectMonth(${index})">
-                    ${month}
-                </button>
-            `).join('');
-            
-            // Set current month as active
-            const currentMonth = new Date().getMonth();
-            selectMonth(currentMonth);
-        }
-
-        // Switch page
-        function switchPage(page) {
-            document.querySelectorAll('.nav-tab').forEach(tab => {
-                tab.classList.toggle('active', tab.dataset.page === page);
-            });
-            
-            document.querySelectorAll('.page-content').forEach(content => {
-                content.classList.toggle('active', content.id === page + 'Page');
-            });
-            
-            if (page === 'reports') {
-                renderReport(currentPeriod);
-            }
-        }
-
-        // Set period
-        function setPeriod(period) {
-            currentPeriod = period;
-            
-            // Update period buttons
-            document.querySelectorAll('.period-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.period === period);
-            });
-            
-            // Show/hide pickers
-            document.getElementById('dayPicker').style.display = period === 'day' ? 'block' : 'none';
-            document.getElementById('monthPicker').style.display = period === 'month' ? 'block' : 'none';
-            document.getElementById('rangePicker').style.display = period === 'range' ? 'block' : 'none';
-            
-            // Hide all info initially
-            document.getElementById('dayInfo').style.display = 'none';
-            document.getElementById('monthInfo').style.display = 'none';
-            document.getElementById('rangeInfo').style.display = 'none';
-            
-            // Update label
-            const labels = {
-                day: 'Выберите дату',
-                month: 'Выберите месяц',
-                range: 'Выберите период'
-            };
-            document.getElementById('datePickerLabel').textContent = labels[period];
-            
-            // Reset selections
-            selectedMonth = null;
-            rangeStart = null;
-            rangeEnd = null;
-            
-            // Render report
-            renderReport(period);
-        }
-
-        // Select day
-        function selectDay() {
-            const input = document.getElementById('dayInput');
-            selectedDate = new Date(input.value);
-            updateDayInfo();
-            renderReport('day');
-        }
-
-        // Update day info
-        function updateDayInfo() {
-            document.getElementById('dayInfoValue').textContent = selectedDate.toLocaleDateString('ru-RU', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-            document.getElementById('dayInfo').style.display = 'block';
-        }
-
-        // Select month
-        function selectMonth(month) {
-            selectedMonth = month;
-            const currentYear = new Date().getFullYear();
-            
-            // Update buttons
-            document.querySelectorAll('.month-btn').forEach(btn => {
-                btn.classList.toggle('active', parseInt(btn.dataset.month) === month);
-            });
-            
-            // Show selected info
-            document.getElementById('monthInfoValue').textContent = `${monthNames[month]} ${currentYear}`;
-            document.getElementById('monthInfo').style.display = 'block';
-            
-            renderReport('month');
-        }
-
-        // Select range
-        function selectRange() {
-            const startInput = document.getElementById('rangeStartInput');
-            const endInput = document.getElementById('rangeEndInput');
-            
-            rangeStart = new Date(startInput.value);
-            rangeEnd = new Date(endInput.value);
-            
-            // Validate range
-            if (rangeStart > rangeEnd) {
-                showToast('Дата начала не может быть позже даты окончания', 'error');
-                return;
-            }
-            
-            updateRangeInfo();
-            renderReport('range');
-        }
-
-        // Update range info
-        function updateRangeInfo() {
-            if (rangeStart && rangeEnd) {
-                document.getElementById('rangeInfoValue').textContent = 
-                    `${rangeStart.toLocaleDateString('ru-RU')} — ${rangeEnd.toLocaleDateString('ru-RU')}`;
-                document.getElementById('rangeInfo').style.display = 'block';
-            }
-        }
-
-        // Update timer display
-        function updateTimerDisplay() {
-            const timerSection = document.getElementById('timerSection');
-            const timerCategory = document.getElementById('timerCategory');
-            
-            if (activeCategory) {
-                const category = categories.find(c => c.id === activeCategory);
-                timerCategory.textContent = category ? category.name : 'Неизвестно';
-                timerSection.classList.add('active');
-            } else {
-                timerCategory.textContent = 'Нет активной задачи';
-                timerSection.classList.remove('active');
-            }
-        }
-
-        // Update status indicator
-        function updateStatus(isActive) {
-            const dot = document.getElementById('statusDot');
-            const text = document.getElementById('statusText');
-            
-            if (isActive) {
-                dot.classList.add('active');
-                text.textContent = 'Активно';
-            } else {
-                dot.classList.remove('active');
-                text.textContent = 'Ожидание';
-            }
-        }
-
-        // Update individual category time display
-        function updateTimeDisplay(id) {
-            const timeEl = document.getElementById(`time-${id}`);
-            const time = categoryTimes[id] || 0;
-            timeEl.textContent = formatTimeShort(time);
-        }
-
-        // Update summary stats - REAL-TIME with active timer
-        function updateStats() {
-            const workCategories = [1, 2, 3, 4, 5, 6];
-            
-            let workTime = workCategories.reduce((sum, id) => sum + (categoryTimes[id] || 0), 0);
-            if (activeCategory && startTime && workCategories.includes(activeCategory)) {
-                workTime += new Date() - startTime;
-            }
-            
-            let breakTime = categoryTimes[8] || 0;
-            if (activeCategory && startTime && activeCategory === 8) {
-                breakTime += new Date() - startTime;
-            }
-            
-            let roadTime = categoryTimes[9] || 0;
-            if (activeCategory && startTime && activeCategory === 9) {
-                roadTime += new Date() - startTime;
-            }
-            
-            let serviceTime = categoryTimes[7] || 0;
-            if (activeCategory && startTime && activeCategory === 7) {
-                serviceTime += new Date() - startTime;
-            }
-            
-            document.getElementById('statWork').textContent = formatTimeShort(workTime);
-            document.getElementById('statBreak').textContent = formatTimeShort(breakTime);
-            document.getElementById('statRoad').textContent = formatTimeShort(roadTime);
-            document.getElementById('statService').textContent = formatTimeShort(serviceTime);
-        }
-
-        // Timer function
-        function startTimer() {
-            if (timerInterval) clearInterval(timerInterval);
-            
-            timerInterval = setInterval(() => {
-                if (activeCategory && startTime) {
-                    const elapsed = new Date() - startTime;
-                    const totalElapsed = (categoryTimes[activeCategory] || 0) + elapsed;
-                    document.getElementById('timerDisplay').textContent = formatTime(totalElapsed);
-                    document.getElementById(`time-${activeCategory}`).textContent = formatTimeShort(totalElapsed);
-                } else {
-                    document.getElementById('timerDisplay').textContent = '00:00:00';
-                }
-                updateStats();
-            }, 1000);
-        }
-
-        // Format time (HH:MM:SS)
-        function formatTime(ms) {
-            const totalSeconds = Math.floor(ms / 1000);
-            const hours = Math.floor(totalSeconds / 3600);
-            const minutes = Math.floor((totalSeconds % 3600) / 60);
-            const seconds = totalSeconds % 60;
-            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-        }
-
-        // Format time short (H:MM)
-        function formatTimeShort(ms) {
-            const totalSeconds = Math.floor(ms / 1000);
-            const hours = Math.floor(totalSeconds / 3600);
-            const minutes = Math.floor((totalSeconds % 3600) / 60);
-            return `${hours}:${String(minutes).padStart(2, '0')}`;
-        }
-
-        // Format time for display (HH:MM)
-        function formatTimeDisplay(date) {
-            return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-        }
-
-        // Save record
-        function saveRecord(categoryId, start, end) {
-            const duration = end - start;
-            if (duration > 0) {
-                records.push({
-                    id: Date.now(),
-                    categoryId,
-                    start: start.toISOString(),
-                    end: end.toISOString(),
-                    duration,
-                    date: start.toDateString()
-                });
-                localStorage.setItem('timeRecords', JSON.stringify(records));
-            }
-        }
-
-        // Save to localStorage
-        function saveToStorage() {
-            localStorage.setItem('categoryTimes', JSON.stringify(categoryTimes));
-            localStorage.setItem('activeSession', JSON.stringify({
-                id: activeCategory,
-                startTime: startTime ? startTime.toISOString() : null
-            }));
-            if (workDayStart) {
-                localStorage.setItem('workDayStart', workDayStart.toISOString());
-            }
-        }
-
-        // Load from localStorage
-        function loadFromStorage() {
-            const saved = localStorage.getItem('categoryTimes');
-            if (saved) {
-                categoryTimes = JSON.parse(saved);
-                for (let id in categoryTimes) {
-                    updateTimeDisplay(id);
-                }
-            }
-            
-            const active = JSON.parse(localStorage.getItem('activeSession') || 'null');
-            if (active && active.id) {
-                activeCategory = active.id;
-                startTime = new Date(active.startTime);
-                document.querySelector(`[data-id="${active.id}"]`)?.classList.add('active');
-                updateTimerDisplay();
-                updateStatus(true);
-            }
-            
-            const savedWorkStart = localStorage.getItem('workDayStart');
-            if (savedWorkStart) {
-                workDayStart = new Date(savedWorkStart);
-            }
-            
-            updateStats();
-        }
-
-        // Select category
-        function selectCategory(id) {
-            const now = new Date();
-            
-            if (!workDayStart || new Date().toDateString() !== workDayStart.toDateString()) {
-                workDayStart = now;
-            }
-            
-            if (activeCategory && startTime) {
-                const elapsed = now - startTime;
-                categoryTimes[activeCategory] = (categoryTimes[activeCategory] || 0) + elapsed;
-                saveRecord(activeCategory, startTime, now);
-            }
-            
-            if (activeCategory) {
-                document.querySelector(`[data-id="${activeCategory}"]`)?.classList.remove('active');
-                updateTimeDisplay(activeCategory);
-            }
-            
-            activeCategory = id;
-            startTime = now;
-            
-            document.querySelector(`[data-id="${id}"]`)?.classList.add('active');
-            updateTimerDisplay();
-            updateStatus(true);
-            saveToStorage();
-        }
-
-        // Finish work
-        function finishWork() {
-            const now = new Date();
-            workDayEnd = now;
-            
-            if (activeCategory && startTime) {
-                const elapsed = now - startTime;
-                categoryTimes[activeCategory] = (categoryTimes[activeCategory] || 0) + elapsed;
-                saveRecord(activeCategory, startTime, now);
-            }
-            
-            if (activeCategory) {
-                document.querySelector(`[data-id="${activeCategory}"]`)?.classList.remove('active');
-            }
-            activeCategory = null;
-            startTime = null;
-            
-            updateTimerDisplay();
-            updateStatus(false);
-            
-            categoryTimes = {};
-            saveToStorage();
-            resetStats();
-            
-            workDayStart = null;
-            workDayEnd = null;
-            localStorage.removeItem('workDayStart');
-            
-            showSummaryModal();
-        }
-
-        // Reset stats to zero
-        function resetStats() {
-            document.getElementById('statWork').textContent = '0:00';
-            document.getElementById('statBreak').textContent = '0:00';
-            document.getElementById('statRoad').textContent = '0:00';
-            document.getElementById('statService').textContent = '0:00';
-        }
-
-        // Show summary modal
-        function showSummaryModal() {
-            const today = new Date().toDateString();
-            const todayRecords = records.filter(r => r.date === today);
-            
-            const modal = document.getElementById('summaryModal');
-            const modalDate = document.getElementById('modalDate');
-            const modalContent = document.getElementById('modalContent');
-            const workStartTime = document.getElementById('workStartTime');
-            const workEndTime = document.getElementById('workEndTime');
-            
-            modalDate.textContent = new Date().toLocaleDateString('ru-RU', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            });
-            
-            if (workDayStart) {
-                workStartTime.textContent = formatTimeDisplay(workDayStart);
-            } else if (todayRecords.length > 0) {
-                const firstRecord = new Date(todayRecords[0].start);
-                workStartTime.textContent = formatTimeDisplay(firstRecord);
-            } else {
-                workStartTime.textContent = '--:--';
-            }
-            
-            if (workDayEnd) {
-                workEndTime.textContent = formatTimeDisplay(workDayEnd);
-            } else {
-                workEndTime.textContent = formatTimeDisplay(new Date());
-            }
-            
-            const summary = calculateSummary(todayRecords);
-            
-            modalContent.innerHTML = `
-                <div class="report-card highlight">
-                    <div class="report-row total">
-                        <span class="label">💼 Всего работа (кат. 1-6)</span>
-                        <span class="value">${formatTime(summary.workTotal)}</span>
-                    </div>
-                </div>
-                <div class="report-card service">
-                    <div class="report-row">
-                        <span class="label">⛪ Служба</span>
-                        <span class="value">${formatTime(summary.service)}</span>
-                    </div>
-                </div>
-                <div class="report-card warning">
-                    <div class="report-row">
-                        <span class="label">🚗 Дорога</span>
-                        <span class="value">${formatTime(summary.road)}</span>
-                    </div>
-                </div>
-                <div class="report-card info">
-                    <div class="report-row">
-                        <span class="label">☕ Перерыв</span>
-                        <span class="value">${formatTime(summary.break)}</span>
-                    </div>
-                </div>
-                ${summary.breakdown.length > 0 ? `
-                    <div class="report-card">
-                        <div class="report-header">📋 Детализация</div>
-                        <div class="breakdown-list">
-                            ${summary.breakdown.map(b => `
-                                <div class="breakdown-item">
-                                    <span class="name">${b.name}</span>
-                                    <span class="time">${formatTime(b.time)}</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                ` : ''}
-            `;
-            
-            modal.classList.add('active');
-        }
-
-        // Close modal
-        document.getElementById('modalClose').addEventListener('click', () => {
-            document.getElementById('summaryModal').classList.remove('active');
-        });
-
-        // Calculate summary
-        function calculateSummary(records) {
-            const workCategories = [1, 2, 3, 4, 5, 6];
-            
-            return {
-                workTotal: records
-                    .filter(r => workCategories.includes(r.categoryId))
-                    .reduce((sum, r) => sum + r.duration, 0),
-                service: records
-                    .filter(r => r.categoryId === 7)
-                    .reduce((sum, r) => sum + r.duration, 0),
-                road: records
-                    .filter(r => r.categoryId === 9)
-                    .reduce((sum, r) => sum + r.duration, 0),
-                break: records
-                    .filter(r => r.categoryId === 8)
-                    .reduce((sum, r) => sum + r.duration, 0),
-                breakdown: categories.map(cat => {
-                    const time = records
-                        .filter(r => r.categoryId === cat.id)
-                        .reduce((sum, r) => sum + r.duration, 0);
-                    return { name: cat.name, time, icon: cat.icon };
-                }).filter(b => b.time > 0)
-            };
-        }
-
-        // Render report
-        function renderReport(period) {
-            const container = document.getElementById('reportContent');
-            const periodRecords = getRecordsForPeriod(period);
-            
-            if (periodRecords.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="icon">📭</div>
-                        <p>Нет данных за выбранный период</p>
-                    </div>
-                `;
-                currentReportData = null;
-                return;
-            }
-            
-            const summary = calculateSummary(periodRecords);
-            currentReportData = { summary, period, periodRecords };
-            
-            const periodLabels = {
-                day: 'День',
-                month: 'Месяц',
-                range: 'Период'
-            };
-            
-            const periodDate = getPeriodDateLabel(period);
-            
-            container.innerHTML = `
-                <div class="report-card highlight">
-                    <div class="report-header">💼 Работа</div>
-                    <div class="report-row total">
-                        <span class="label">Всего рабочее время (кат. 1-6)</span>
-                        <span class="value">${formatTime(summary.workTotal)}</span>
-                    </div>
-                    ${summary.breakdown.filter(b => [1,2,3,4,5,6].includes(categories.find(c => c.name === b.name)?.id)).length > 0 ? `
-                        <div class="breakdown-list">
-                            ${summary.breakdown.filter(b => [1,2,3,4,5,6].includes(categories.find(c => c.name === b.name)?.id)).map(b => `
-                                <div class="breakdown-item">
-                                    <span class="name">${b.icon} ${b.name}</span>
-                                    <span class="time">${formatTime(b.time)}</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                    ` : ''}
-                </div>
-                
-                <div class="report-card service">
-                    <div class="report-header">⛪ Служба</div>
-                    <div class="report-row">
-                        <span class="label">Время на службе</span>
-                        <span class="value">${formatTime(summary.service)}</span>
-                    </div>
-                </div>
-                
-                <div class="report-card warning">
-                    <div class="report-header">🚗 Дорога</div>
-                    <div class="report-row">
-                        <span class="label">Время в дороге</span>
-                        <span class="value">${formatTime(summary.road)}</span>
-                    </div>
-                </div>
-                
-                <div class="report-card info">
-                    <div class="report-header">☕ Перерыв</div>
-                    <div class="report-row">
-                        <span class="label">Время перерыва</span>
-                        <span class="value">${formatTime(summary.break)}</span>
-                    </div>
-                </div>
-                
-                <div style="text-align: center; margin-top: 16px; color: var(--text-secondary); font-size: 0.75rem;">
-                    Отчёт за период: ${periodLabels[period]} (${periodDate})
-                </div>
-            `;
-        }
-
-        // Get period date label
-        function getPeriodDateLabel(period) {
-            switch(period) {
-                case 'day':
-                    return selectedDate.toLocaleDateString('ru-RU');
-                case 'month':
-                    if (selectedMonth !== null) {
-                        return `${monthNames[selectedMonth]} ${new Date().getFullYear()}`;
-                    }
-                    return 'Текущий месяц';
-                case 'range':
-                    if (rangeStart && rangeEnd) {
-                        return `${rangeStart.toLocaleDateString('ru-RU')} — ${rangeEnd.toLocaleDateString('ru-RU')}`;
-                    }
-                    return 'Текущий период';
-            }
-        }
-
-        // Get records for period
-        function getRecordsForPeriod(period) {
-            switch(period) {
-                case 'day':
-                    const selectedDateStr = selectedDate.toDateString();
-                    return records.filter(r => new Date(r.start).toDateString() === selectedDateStr);
-                    
-                case 'month':
-                    const month = selectedMonth !== null ? selectedMonth : new Date().getMonth();
-                    const year = new Date().getFullYear();
-                    return records.filter(r => {
-                        const recordDate = new Date(r.start);
-                        return recordDate.getMonth() === month && recordDate.getFullYear() === year;
-                    });
-                    
-                case 'range':
-                    if (!rangeStart || !rangeEnd) {
-                        return records;
-                    }
-                    return records.filter(r => {
-                        const recordDate = new Date(r.start);
-                        return recordDate >= rangeStart && recordDate <= rangeEnd;
-                    });
-            }
-        }
-
-        // Export Report
-        function exportReport(format) {
-            if (!currentReportData) {
-                showToast('Нет данных для экспорта', 'error');
-                return;
-            }
-
-            const { summary, period, periodRecords } = currentReportData;
-            const filename = `отчёт_времени_${period}_${new Date().toISOString().split('T')[0]}`;
-
-            switch(format) {
-                case 'pdf':
-                    exportPDF(filename, summary, period);
-                    break;
-                case 'xls':
-                    exportXLS(filename, summary, period, periodRecords);
-                    break;
-                case 'csv':
-                    exportCSV(filename, summary, period, periodRecords);
-                    break;
-            }
-        }
-
-        // Export PDF
-        function exportPDF(filename, summary, period) {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-
-            doc.setFillColor(99, 102, 241);
-            doc.rect(0, 0, 210, 40, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(20);
-            doc.text('Отчёт по бюджету времени', 105, 20, { align: 'center' });
-            doc.setFontSize(12);
-            doc.text(`Период: ${getPeriodLabel(period)}`, 105, 30, { align: 'center' });
-
-            const tableData = [
-                ['💼 Работа (кат. 1-6)', formatTime(summary.workTotal)],
-                ['⛪ Служба', formatTime(summary.service)],
-                ['🚗 Дорога', formatTime(summary.road)],
-                ['☕ Перерыв', formatTime(summary.break)]
-            ];
-
-            doc.autoTable({
-                startY: 50,
-                head: [['Категория', 'Время']],
-                body: tableData,
-                theme: 'striped',
-                headStyles: { fillColor: [99, 102, 241] },
-                styles: { fontSize: 12 }
-            });
-
-            if (summary.breakdown.length > 0) {
-                const breakdownData = summary.breakdown.map(b => [b.icon + ' ' + b.name, formatTime(b.time)]);
-                doc.autoTable({
-                    startY: doc.lastAutoTable.finalY + 20,
-                    head: [['Детализация', 'Время']],
-                    body: breakdownData,
-                    theme: 'grid',
-                    headStyles: { fillColor: [139, 92, 246] },
-                    styles: { fontSize: 11 }
-                });
-            }
-
-            const pageCount = doc.internal.getNumberOfPages();
-            for(let i = 1; i <= pageCount; i++) {
-                doc.setPage(i);
-                doc.setFontSize(10);
-                doc.setTextColor(150);
-                doc.text(`Страница ${i} из ${pageCount}`, 105, 290, { align: 'center' });
-                doc.text(`Создано: ${new Date().toLocaleString('ru-RU')}`, 105, 295, { align: 'center' });
-            }
-
-            doc.save(`${filename}.pdf`);
-            showToast('PDF успешно создан!', 'success');
-        }
-
-        // Export XLS
-        function exportXLS(filename, summary, period, periodRecords) {
-            const wb = XLSX.utils.book_new();
-
-            const summaryData = [
-                ['Отчёт по бюджету времени'],
-                [`Период: ${getPeriodLabel(period)}`],
-                [`Дата создания: ${new Date().toLocaleString('ru-RU')}`],
-                [],
-                ['Категория', 'Время (часы)', 'Время (минуты)'],
-                ['💼 Работа (кат. 1-6)', (summary.workTotal / 3600000).toFixed(2), Math.round(summary.workTotal / 60000)],
-                ['⛪ Служба', (summary.service / 3600000).toFixed(2), Math.round(summary.service / 60000)],
-                ['🚗 Дорога', (summary.road / 3600000).toFixed(2), Math.round(summary.road / 60000)],
-                ['☕ Перерыв', (summary.break / 3600000).toFixed(2), Math.round(summary.break / 60000)],
-                [],
-                ['Детализация по категориям'],
-                ['Категория', 'Время (часы)', 'Время (минуты)']
-            ];
-
-            summary.breakdown.forEach(b => {
-                summaryData.push([b.name, (b.time / 3600000).toFixed(2), Math.round(b.time / 60000)]);
-            });
-
-            const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
-            XLSX.utils.book_append_sheet(wb, wsSummary, 'Сводка');
-
-            const detailsData = [
-                ['Детальный отчёт'],
-                [`Период: ${getPeriodLabel(period)}`],
-                [],
-                ['Дата', 'Категория', 'Начало', 'Конец', 'Длительность (мин)']
-            ];
-
-            periodRecords.forEach(r => {
-                const cat = categories.find(c => c.id === r.categoryId);
-                const start = new Date(r.start);
-                const end = new Date(r.end);
-                detailsData.push([
-                    start.toLocaleDateString('ru-RU'),
-                    cat ? cat.name : 'Неизвестно',
-                    start.toLocaleTimeString('ru-RU'),
-                    end.toLocaleTimeString('ru-RU'),
-                    Math.round(r.duration / 60000)
-                ]);
-            });
-
-            const wsDetails = XLSX.utils.aoa_to_sheet(detailsData);
-            XLSX.utils.book_append_sheet(wb, wsDetails, 'Детали');
-
-            XLSX.writeFile(wb, `${filename}.xlsx`);
-            showToast('Excel файл создан!', 'success');
-        }
-
-        // Export CSV
-        function exportCSV(filename, summary, period, periodRecords) {
-            let csv = 'Отчёт по бюджету времени\n';
-            csv += `Период: ${getPeriodLabel(period)}\n`;
-            csv += `Дата создания: ${new Date().toLocaleString('ru-RU')}\n\n`;
-            
-            csv += 'Категория,Время (часы),Время (минуты)\n';
-            csv += `Работа (кат. 1-6),${(summary.workTotal / 3600000).toFixed(2)},${Math.round(summary.workTotal / 60000)}\n`;
-            csv += `Служба,${(summary.service / 3600000).toFixed(2)},${Math.round(summary.service / 60000)}\n`;
-            csv += `Дорога,${(summary.road / 3600000).toFixed(2)},${Math.round(summary.road / 60000)}\n`;
-            csv += `Перерыв,${(summary.break / 3600000).toFixed(2)},${Math.round(summary.break / 60000)}\n\n`;
-            
-            csv += 'Детализация по категориям\n';
-            csv += 'Категория,Время (часы),Время (минуты)\n';
-            summary.breakdown.forEach(b => {
-                csv += `${b.name},${(b.time / 3600000).toFixed(2)},${Math.round(b.time / 60000)}\n`;
-            });
-            
-            csv += '\nДетальный отчёт\n';
-            csv += 'Дата,Категория,Начало,Конец,Длительность (мин)\n';
-            periodRecords.forEach(r => {
-                const cat = categories.find(c => c.id === r.categoryId);
-                const start = new Date(r.start);
-                const end = new Date(r.end);
-                csv += `${start.toLocaleDateString('ru-RU')},${cat ? cat.name : 'Неизвестно'},${start.toLocaleTimeString('ru-RU')},${end.toLocaleTimeString('ru-RU')},${Math.round(r.duration / 60000)}\n`;
-            });
-
-            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = `${filename}.csv`;
-            link.click();
-            
-            showToast('CSV файл создан!', 'success');
-        }
-
-        // Get period label
-        function getPeriodLabel(period) {
-            const labels = {
-                day: 'День',
-                month: 'Месяц',
-                range: 'Период'
-            };
-            return `${labels[period]} (${getPeriodDateLabel(period)})`;
-        }
-
-        // Share to Telegram
-        function shareToTelegram() {
-            if (!currentReportData) {
-                showToast('Нет данных для отправки', 'error');
-                return;
-            }
-
-            const { summary } = currentReportData;
-            const text = `
+<div class="app-container">
+<!-- Header -->
+<header class="header">
+<div class="header-logo">⏱️</div>
+<h1 id="appTitle">Времяслед</h1>
+<p id="currentDate"></p>
+</header>
+<!-- Tracker Page -->
+<div id="trackerPage" class="page-content active">
+<!-- Timer Display -->
+<section class="timer-section" id="timerSection">
+<div class="timer-label">Текущее время</div>
+<div class="timer-display" id="timerDisplay">00:00:00</div>
+<div class="timer-category" id="timerCategory">Нет активной задачи</div>
+</section>
+<!-- Categories -->
+<section class="categories-section">
+<div class="section-header">
+<h2 class="section-title">Категории занятости</h2>
+<div class="status-indicator">
+<div class="status-dot" id="statusDot"></div>
+<span id="statusText">Ожидание</span>
+</div>
+</div>
+<div class="categories-grid" id="categoriesGrid">
+<!-- Row 1 -->
+<div class="category-card work" data-id="1" onclick="selectCategory(1)">
+<div class="category-icon">🏛️</div>
+<div class="category-name">Работа ПСТГУ</div>
+<div class="category-time" id="time-1">00:00</div>
+</div>
+<div class="category-card work" data-id="2" onclick="selectCategory(2)">
+<div class="category-icon">🏢</div>
+<div class="category-name">Работа ПСТБИ</div>
+<div class="category-time" id="time-2">00:00</div>
+</div>
+<div class="category-card work" data-id="3" onclick="selectCategory(3)">
+<div class="category-icon">👥</div>
+<div class="category-name">Собрание ПСТГУ</div>
+<div class="category-time" id="time-3">00:00</div>
+</div>
+<div class="category-card work" data-id="4" onclick="selectCategory(4)">
+<div class="category-icon">🤝</div>
+<div class="category-name">Собрание ПСТБИ</div>
+<div class="category-time" id="time-4">00:00</div>
+</div>
+<!-- Row 2 -->
+<div class="category-card work" data-id="5" onclick="selectCategory(5)">
+<div class="category-icon">🏆</div>
+<div class="category-name">Олимпиады</div>
+<div class="category-time" id="time-5">00:00</div>
+</div>
+<div class="category-card work" data-id="6" onclick="selectCategory(6)">
+<div class="category-icon">🎓</div>
+<div class="category-name">Школы</div>
+<div class="category-time" id="time-6">00:00</div>
+</div>
+<div class="category-card service" data-id="7" onclick="selectCategory(7)">
+<div class="category-icon">⛪</div>
+<div class="category-name">Служба</div>
+<div class="category-time" id="time-7">00:00</div>
+</div>
+<div class="category-card road" data-id="9" onclick="selectCategory(9)">
+<div class="category-icon">🚗</div>
+<div class="category-name">Дорога</div>
+<div class="category-time" id="time-9">00:00</div>
+</div>
+<!-- Row 3 -->
+<div class="category-card break" data-id="8" onclick="selectCategory(8)">
+<div class="category-icon">☕</div>
+<div class="category-name">Перерыв</div>
+<div class="category-time" id="time-8">00:00</div>
+</div>
+<!-- Full Width Finish Button -->
+<button class="finish-btn-grid" onclick="finishWork()">
+<span class="icon">⏹️</span>
+<span class="label">Финиш</span>
+</button>
+</div>
+<!-- Summary Stats - Real-time -->
+<div class="summary-stats">
+<div class="stats-grid">
+<div class="stat-item work">
+<div class="stat-value" id="statWork">0:00</div>
+<div class="stat-label"><span class="emoji">💼</span> Работа</div>
+</div>
+<div class="stat-item break">
+<div class="stat-value" id="statBreak">0:00</div>
+<div class="stat-label"><span class="emoji">☕</span> Перерыв</div>
+</div>
+<div class="stat-item road">
+<div class="stat-value" id="statRoad">0:00</div>
+<div class="stat-label"><span class="emoji">🚗</span> Дорога</div>
+</div>
+<div class="stat-item service">
+<div class="stat-value" id="statService">0:00</div>
+<div class="stat-label"><span class="emoji">⛪</span> Служба</div>
+</div>
+</div>
+</div>
+<!-- Weekly Productivity -->
+<div class="weekly-productivity">
+<div class="productivity-header">
+<div class="productivity-title">📊 Продуктивность за неделю</div>
+<div class="productivity-value" id="productivityPercent">0%</div>
+</div>
+<div class="productivity-bar">
+<div class="productivity-fill productivity-low" id="productivityFill" style="width: 0%"></div>
+</div>
+<div class="productivity-details">
+<span id="weeklyWorkTime">0:00 / 40:00</span>
+<span>40 часов = 100%</span>
+</div>
+<div class="productivity-reset" id="productivityReset">Сброс: воскресенье, 23:00</div>
+</div>
+</section>
+</div>
+<!-- Reports Page -->
+<div id="reportsPage" class="page-content">
+<section class="reports-section">
+<h2 class="section-title">Отчёты</h2>
+<!-- Period Selector -->
+<div class="period-selector">
+<button class="period-btn active" data-period="day" onclick="setPeriod('day')">День</button>
+<button class="period-btn" data-period="month" onclick="setPeriod('month')">Месяц</button>
+<button class="period-btn" data-period="range" onclick="setPeriod('range')">Период</button>
+</div>
+<!-- Date Picker Section -->
+<div class="date-picker-section" id="datePickerSection">
+<div class="date-picker-label">
+<span class="icon">📅</span>
+<span id="datePickerLabel">Выберите дату</span>
+</div>
+<!-- Day Picker -->
+<div id="dayPicker">
+<input type="date" class="date-input" id="dayInput" onchange="selectDay()">
+</div>
+<!-- Month Picker -->
+<div id="monthPicker" style="display: none;">
+<div class="month-selector" id="monthSelector">
+<!-- Months will be generated by JS -->
+</div>
+<div class="selected-period-info" id="monthInfo" style="display: none;">
+<div class="label">Выбранный месяц</div>
+<div class="value" id="monthInfoValue"></div>
+</div>
+</div>
+<!-- Range Picker -->
+<div id="rangePicker" style="display: none;">
+<div class="date-range-inputs">
+<div class="date-input-wrapper">
+<label>📍 Дата начала</label>
+<input type="date" class="date-input" id="rangeStartInput" onchange="selectRange()">
+</div>
+<div class="date-input-wrapper">
+<label>🏁 Дата окончания</label>
+<input type="date" class="date-input" id="rangeEndInput" onchange="selectRange()">
+</div>
+</div>
+<div class="selected-period-info" id="rangeInfo" style="display: none;">
+<div class="label">Выбранный период</div>
+<div class="value" id="rangeInfoValue"></div>
+</div>
+</div>
+<!-- Selected Period Info -->
+<div class="selected-period-info" id="dayInfo" style="display: none;">
+<div class="label">Выбранная дата</div>
+<div class="value" id="dayInfoValue"></div>
+</div>
+</div>
+<!-- Export Section -->
+<div class="export-section">
+<div class="export-header">
+<h3 class="export-title">📥 Экспорт отчёта</h3>
+</div>
+<div class="export-formats">
+<button class="export-btn pdf" onclick="exportReport('pdf')">
+<span class="icon">PDF</span>
+<span class="label">PDF</span>
+</button>
+<button class="export-btn xls" onclick="exportReport('xls')">
+<span class="icon">XLS</span>
+<span class="label">Excel</span>
+</button>
+<button class="export-btn csv" onclick="exportReport('csv')">
+<span class="icon">CSV</span>
+<span class="label">CSV</span>
+</button>
+</div>
+<div class="export-share">
+<button class="share-btn telegram" onclick="shareToTelegram()">
+<span>✈️</span>
+<span>Telegram</span>
+</button>
+<button class="share-btn email" onclick="shareToEmail()">
+<span>📧</span>
+<span>Email</span>
+</button>
+<button class="share-btn vk" onclick="shareToVK()">
+<span>🔵</span>
+<span>ВК</span>
+</button>
+</div>
+</div>
+<div id="reportContent">
+<!-- Report will be generated by JS -->
+</div>
+</section>
+</div>
+<!-- Navigation -->
+<nav class="nav-tabs">
+<button class="nav-tab active" data-page="tracker" onclick="switchPage('tracker')">
+<span>⏱️</span> Трекер
+</button>
+<button class="nav-tab" data-page="reports" onclick="switchPage('reports')">
+<span>📊</span> Отчёты
+</button>
+</nav>
+</div>
+<!-- Summary Modal -->
+<div class="modal-overlay" id="summaryModal">
+<div class="modal">
+<div class="modal-header">
+<h2>Рабочий день завершён</h2>
+<p id="modalDate"></p>
+</div>
+<!-- Work Time Info -->
+<div class="work-time-info" id="workTimeInfo">
+<div class="time-row">
+<span class="label">🕐 Начало рабочего дня</span>
+<span class="value" id="workStartTime">--:--</span>
+</div>
+<div class="time-row">
+<span class="label">🕐 Окончание рабочего дня</span>
+<span class="value" id="workEndTime">--:--</span>
+</div>
+</div>
+<div id="modalContent">
+<!-- Summary content -->
+</div>
+<button class="modal-close" id="modalClose">Закрыть</button>
+</div>
+</div>
+<!-- Toast Notification -->
+<div class="toast" id="toast">
+<span id="toastIcon">✓</span>
+<span id="toastMessage">Успешно!</span>
+</div>
+<script>
+// Categories configuration
+const categories = [
+{ id: 1, name: 'Работа ПСТГУ', icon: '🏛️', type: 'work' },
+{ id: 2, name: 'Работа ПСТБИ', icon: '🏢', type: 'work' },
+{ id: 3, name: 'Собрание ПСТГУ', icon: '👥', type: 'work' },
+{ id: 4, name: 'Собрание ПСТБИ', icon: '🤝', type: 'work' },
+{ id: 5, name: 'Олимпиады', icon: '🏆', type: 'work' },
+{ id: 6, name: 'Школы', icon: '🎓', type: 'work' },
+{ id: 7, name: 'Служба', icon: '⛪', type: 'service' },
+{ id: 8, name: 'Перерыв', icon: '☕', type: 'break' },
+{ id: 9, name: 'Дорога', icon: '🚗', type: 'road' }
+];
+// Month names in Russian
+const monthNames = [
+'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+];
+// State
+let activeCategory = null;
+let startTime = null;
+let timerInterval = null;
+let categoryTimes = {};
+let records = JSON.parse(localStorage.getItem('timeRecords')) || [];
+let currentPeriod = 'day';
+let currentReportData = null;
+let workDayStart = null;
+let workDayEnd = null;
+// Date selection state
+let selectedDate = new Date();
+let selectedMonth = null;
+let rangeStart = null;
+let rangeEnd = null;
+// Swipe state
+let touchStartX = 0;
+let touchEndX = 0;
+let isSwiping = false;
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+initDate();
+initMonthPicker();
+initDayInput();
+initRangeInputs();
+startTimer();
+loadFromStorage();
+checkWeeklyReset();
+updateWeeklyProductivity();
+renderReport('day');
+initSwipe();
+});
+
+// Initialize swipe navigation
+function initSwipe() {
+const appContainer = document.querySelector('.app-container');
+appContainer.addEventListener('touchstart', (e) => {
+touchStartX = e.changedTouches[0].screenX;
+isSwiping = true;
+}, { passive: true });
+appContainer.addEventListener('touchend', (e) => {
+if (!isSwiping) return;
+touchEndX = e.changedTouches[0].screenX;
+handleSwipe();
+isSwiping = false;
+}, { passive: true });
+}
+
+function handleSwipe() {
+const swipeThreshold = 50;
+const diff = touchStartX - touchEndX;
+const currentPage = document.querySelector('.page-content.active');
+if (Math.abs(diff) < swipeThreshold) return;
+if (diff > 0) {
+// Swipe left - go to Reports
+if (currentPage.id === 'trackerPage') {
+switchPage('reports');
+}
+} else {
+// Swipe right - go to Tracker
+if (currentPage.id === 'reportsPage') {
+switchPage('tracker');
+}
+}
+}
+
+// Initialize date
+function initDate() {
+const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+document.getElementById('currentDate').textContent = new Date().toLocaleDateString('ru-RU', options);
+}
+
+// Initialize day input
+function initDayInput() {
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('dayInput').max = today;
+document.getElementById('dayInput').value = today;
+selectedDate = new Date();
+updateDayInfo();
+}
+
+// Initialize range inputs
+function initRangeInputs() {
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('rangeStartInput').max = today;
+document.getElementById('rangeEndInput').max = today;
+document.getElementById('rangeEndInput').value = today;
+// Set start date to beginning of current month
+const firstOfMonth = new Date();
+firstOfMonth.setDate(1);
+document.getElementById('rangeStartInput').value = firstOfMonth.toISOString().split('T')[0];
+rangeStart = firstOfMonth;
+rangeEnd = new Date();
+updateRangeInfo();
+}
+
+// Initialize month picker
+function initMonthPicker() {
+const container = document.getElementById('monthSelector');
+const currentYear = new Date().getFullYear();
+container.innerHTML = monthNames.map((month, index) => `
+<button class="month-btn" data-month="${index}" onclick="selectMonth(${index})">
+${month}
+</button>
+`).join('');
+// Set current month as active
+const currentMonth = new Date().getMonth();
+selectMonth(currentMonth);
+}
+
+// Switch page
+function switchPage(page) {
+document.querySelectorAll('.nav-tab').forEach(tab => {
+tab.classList.toggle('active', tab.dataset.page === page);
+});
+document.querySelectorAll('.page-content').forEach(content => {
+content.classList.toggle('active', content.id === page + 'Page');
+});
+if (page === 'reports') {
+renderReport(currentPeriod);
+}
+}
+
+// Set period
+function setPeriod(period) {
+currentPeriod = period;
+// Update period buttons
+document.querySelectorAll('.period-btn').forEach(btn => {
+btn.classList.toggle('active', btn.dataset.period === period);
+});
+// Show/hide pickers
+document.getElementById('dayPicker').style.display = period === 'day' ? 'block' : 'none';
+document.getElementById('monthPicker').style.display = period === 'month' ? 'block' : 'none';
+document.getElementById('rangePicker').style.display = period === 'range' ? 'block' : 'none';
+// Hide all info initially
+document.getElementById('dayInfo').style.display = 'none';
+document.getElementById('monthInfo').style.display = 'none';
+document.getElementById('rangeInfo').style.display = 'none';
+// Update label
+const labels = {
+day: 'Выберите дату',
+month: 'Выберите месяц',
+range: 'Выберите период'
+};
+document.getElementById('datePickerLabel').textContent = labels[period];
+// Reset selections
+selectedMonth = null;
+rangeStart = null;
+rangeEnd = null;
+// Render report
+renderReport(period);
+}
+
+// Select day
+function selectDay() {
+const input = document.getElementById('dayInput');
+selectedDate = new Date(input.value);
+updateDayInfo();
+renderReport('day');
+}
+
+// Update day info
+function updateDayInfo() {
+document.getElementById('dayInfoValue').textContent = selectedDate.toLocaleDateString('ru-RU', {
+weekday: 'long',
+year: 'numeric',
+month: 'long',
+day: 'numeric'
+});
+document.getElementById('dayInfo').style.display = 'block';
+}
+
+// Select month
+function selectMonth(month) {
+selectedMonth = month;
+const currentYear = new Date().getFullYear();
+// Update buttons
+document.querySelectorAll('.month-btn').forEach(btn => {
+btn.classList.toggle('active', parseInt(btn.dataset.month) === month);
+});
+// Show selected info - Format: "месяц, год"
+document.getElementById('monthInfoValue').textContent = `${monthNames[month]}, ${currentYear}`;
+document.getElementById('monthInfo').style.display = 'block';
+renderReport('month');
+}
+
+// Select range
+function selectRange() {
+const startInput = document.getElementById('rangeStartInput');
+const endInput = document.getElementById('rangeEndInput');
+rangeStart = new Date(startInput.value);
+rangeEnd = new Date(endInput.value);
+// Validate range
+if (rangeStart > rangeEnd) {
+showToast('Дата начала не может быть позже даты окончания', 'error');
+return;
+}
+updateRangeInfo();
+renderReport('range');
+}
+
+// Update range info - Format: "дата начала - дата конца"
+function updateRangeInfo() {
+if (rangeStart && rangeEnd) {
+const startDate = rangeStart.toLocaleDateString('ru-RU');
+const endDate = rangeEnd.toLocaleDateString('ru-RU');
+document.getElementById('rangeInfoValue').textContent = `${startDate} — ${endDate}`;
+document.getElementById('rangeInfo').style.display = 'block';
+}
+}
+
+// Check weekly reset (Sunday 23:00)
+function checkWeeklyReset() {
+const now = new Date();
+const lastReset = localStorage.getItem('weeklyReset');
+const currentWeek = getWeekNumber(now);
+if (!lastReset || lastReset !== currentWeek.toString()) {
+if (now.getDay() === 0 && now.getHours() >= 23) {
+// Reset weekly data
+localStorage.setItem('weeklyReset', currentWeek.toString());
+localStorage.removeItem('weeklyWorkTime');
+}
+}
+// Update reset info
+updateResetInfo();
+}
+
+function getWeekNumber(date) {
+const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+const dayNum = d.getUTCDay() || 7;
+d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+
+function updateResetInfo() {
+const now = new Date();
+const nextSunday = new Date(now);
+nextSunday.setDate(now.getDate() + (7 - now.getDay()));
+nextSunday.setHours(23, 0, 0, 0);
+const resetTime = nextSunday.toLocaleDateString('ru-RU', {
+weekday: 'long',
+hour: '2-digit',
+minute: '2-digit'
+});
+document.getElementById('productivityReset').textContent = `Сброс: ${resetTime}`;
+}
+
+// Update weekly productivity
+function updateWeeklyProductivity() {
+const workCategories = [1, 2, 3, 4, 5, 6];
+const now = new Date();
+const weekStart = getWeekStart(now);
+const weekRecords = records.filter(r => {
+const recordDate = new Date(r.start);
+return recordDate >= weekStart && workCategories.includes(r.categoryId);
+});
+const weeklyWorkTime = weekRecords.reduce((sum, r) => sum + r.duration, 0);
+// Add current active time if working
+if (activeCategory && startTime && workCategories.includes(activeCategory)) {
+weeklyWorkTime += new Date() - startTime;
+}
+// Calculate percentage (40 hours = 100%)
+const targetTime = 40 * 60 * 60 * 1000; // 40 hours in ms
+const percentage = Math.min(Math.round((weeklyWorkTime / targetTime) * 100), 100);
+// Update UI
+document.getElementById('productivityPercent').textContent = `${percentage}%`;
+document.getElementById('weeklyWorkTime').textContent = `${formatTimeShort(weeklyWorkTime)} / 40:00`;
+// Update progress bar
+const fill = document.getElementById('productivityFill');
+fill.style.width = `${percentage}%`;
+// Update color based on percentage
+fill.className = 'productivity-fill';
+if (percentage >= 100) {
+fill.classList.add('productivity-complete');
+} else if (percentage >= 75) {
+fill.classList.add('productivity-high');
+} else if (percentage >= 50) {
+fill.classList.add('productivity-medium');
+} else {
+fill.classList.add('productivity-low');
+}
+}
+
+function getWeekStart(date) {
+const day = date.getDay() || 7;
+const weekStart = new Date(date);
+weekStart.setHours(0, 0, 0, 0);
+weekStart.setDate(date.getDate() - day + 1);
+return weekStart;
+}
+
+// Update timer display
+function updateTimerDisplay() {
+const timerSection = document.getElementById('timerSection');
+const timerCategory = document.getElementById('timerCategory');
+if (activeCategory) {
+const category = categories.find(c => c.id === activeCategory);
+timerCategory.textContent = category ? category.name : 'Неизвестно';
+timerSection.classList.add('active');
+} else {
+timerCategory.textContent = 'Нет активной задачи';
+timerSection.classList.remove('active');
+}
+}
+
+// Update status indicator
+function updateStatus(isActive) {
+const dot = document.getElementById('statusDot');
+const text = document.getElementById('statusText');
+if (isActive) {
+dot.classList.add('active');
+text.textContent = 'Активно';
+} else {
+dot.classList.remove('active');
+text.textContent = 'Ожидание';
+}
+}
+
+// Update individual category time display
+function updateTimeDisplay(id) {
+const timeEl = document.getElementById(`time-${id}`);
+const time = categoryTimes[id] || 0;
+timeEl.textContent = formatTimeShort(time);
+}
+
+// Update summary stats - REAL-TIME with active timer
+function updateStats() {
+const workCategories = [1, 2, 3, 4, 5, 6];
+let workTime = workCategories.reduce((sum, id) => sum + (categoryTimes[id] || 0), 0);
+if (activeCategory && startTime && workCategories.includes(activeCategory)) {
+workTime += new Date() - startTime;
+}
+let breakTime = categoryTimes[8] || 0;
+if (activeCategory && startTime && activeCategory === 8) {
+breakTime += new Date() - startTime;
+}
+let roadTime = categoryTimes[9] || 0;
+if (activeCategory && startTime && activeCategory === 9) {
+roadTime += new Date() - startTime;
+}
+let serviceTime = categoryTimes[7] || 0;
+if (activeCategory && startTime && activeCategory === 7) {
+serviceTime += new Date() - startTime;
+}
+document.getElementById('statWork').textContent = formatTimeShort(workTime);
+document.getElementById('statBreak').textContent = formatTimeShort(breakTime);
+document.getElementById('statRoad').textContent = formatTimeShort(roadTime);
+document.getElementById('statService').textContent = formatTimeShort(serviceTime);
+// Update weekly productivity
+updateWeeklyProductivity();
+}
+
+// Timer function
+function startTimer() {
+if (timerInterval) clearInterval(timerInterval);
+timerInterval = setInterval(() => {
+if (activeCategory && startTime) {
+const elapsed = new Date() - startTime;
+const totalElapsed = (categoryTimes[activeCategory] || 0) + elapsed;
+document.getElementById('timerDisplay').textContent = formatTime(totalElapsed);
+document.getElementById(`time-${activeCategory}`).textContent = formatTimeShort(totalElapsed);
+} else {
+document.getElementById('timerDisplay').textContent = '00:00:00';
+}
+updateStats();
+}, 1000);
+// Check weekly reset every minute
+setInterval(checkWeeklyReset, 60000);
+}
+
+// Format time (HH:MM:SS)
+function formatTime(ms) {
+const totalSeconds = Math.floor(ms / 1000);
+const hours = Math.floor(totalSeconds / 3600);
+const minutes = Math.floor((totalSeconds % 3600) / 60);
+const seconds = totalSeconds % 60;
+return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+// Format time short (H:MM)
+function formatTimeShort(ms) {
+const totalSeconds = Math.floor(ms / 1000);
+const hours = Math.floor(totalSeconds / 3600);
+const minutes = Math.floor((totalSeconds % 3600) / 60);
+return `${hours}:${String(minutes).padStart(2, '0')}`;
+}
+
+// Format time for display (HH:MM)
+function formatTimeDisplay(date) {
+return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+}
+
+// Save record
+function saveRecord(categoryId, start, end) {
+const duration = end - start;
+if (duration > 0) {
+records.push({
+id: Date.now(),
+categoryId,
+start: start.toISOString(),
+end: end.toISOString(),
+duration,
+date: start.toDateString()
+});
+localStorage.setItem('timeRecords', JSON.stringify(records));
+}
+}
+
+// Save to localStorage
+function saveToStorage() {
+localStorage.setItem('categoryTimes', JSON.stringify(categoryTimes));
+localStorage.setItem('activeSession', JSON.stringify({
+id: activeCategory,
+startTime: startTime ? startTime.toISOString() : null
+}));
+if (workDayStart) {
+localStorage.setItem('workDayStart', workDayStart.toISOString());
+}
+}
+
+// Load from localStorage
+function loadFromStorage() {
+const saved = localStorage.getItem('categoryTimes');
+if (saved) {
+categoryTimes = JSON.parse(saved);
+for (let id in categoryTimes) {
+updateTimeDisplay(id);
+}
+}
+const active = JSON.parse(localStorage.getItem('activeSession') || 'null');
+if (active && active.id) {
+activeCategory = active.id;
+startTime = new Date(active.startTime);
+document.querySelector(`[data-id="${active.id}"]`)?.classList.add('active');
+updateTimerDisplay();
+updateStatus(true);
+}
+const savedWorkStart = localStorage.getItem('workDayStart');
+if (savedWorkStart) {
+workDayStart = new Date(savedWorkStart);
+}
+updateStats();
+}
+
+// Select category
+function selectCategory(id) {
+const now = new Date();
+if (!workDayStart || new Date().toDateString() !== workDayStart.toDateString()) {
+workDayStart = now;
+}
+if (activeCategory && startTime) {
+const elapsed = now - startTime;
+categoryTimes[activeCategory] = (categoryTimes[activeCategory] || 0) + elapsed;
+saveRecord(activeCategory, startTime, now);
+}
+if (activeCategory) {
+document.querySelector(`[data-id="${activeCategory}"]`)?.classList.remove('active');
+updateTimeDisplay(activeCategory);
+}
+activeCategory = id;
+startTime = now;
+document.querySelector(`[data-id="${id}"]`)?.classList.add('active');
+updateTimerDisplay();
+updateStatus(true);
+saveToStorage();
+}
+
+// Finish work
+function finishWork() {
+const now = new Date();
+workDayEnd = now;
+if (activeCategory && startTime) {
+const elapsed = now - startTime;
+categoryTimes[activeCategory] = (categoryTimes[activeCategory] || 0) + elapsed;
+saveRecord(activeCategory, startTime, now);
+}
+if (activeCategory) {
+document.querySelector(`[data-id="${activeCategory}"]`)?.classList.remove('active');
+}
+activeCategory = null;
+startTime = null;
+updateTimerDisplay();
+updateStatus(false);
+categoryTimes = {};
+saveToStorage();
+resetStats();
+workDayStart = null;
+workDayEnd = null;
+localStorage.removeItem('workDayStart');
+showSummaryModal();
+}
+
+// Reset stats to zero
+function resetStats() {
+document.getElementById('statWork').textContent = '0:00';
+document.getElementById('statBreak').textContent = '0:00';
+document.getElementById('statRoad').textContent = '0:00';
+document.getElementById('statService').textContent = '0:00';
+}
+
+// Show summary modal
+function showSummaryModal() {
+const today = new Date().toDateString();
+const todayRecords = records.filter(r => r.date === today);
+const modal = document.getElementById('summaryModal');
+const modalDate = document.getElementById('modalDate');
+const modalContent = document.getElementById('modalContent');
+const workStartTime = document.getElementById('workStartTime');
+const workEndTime = document.getElementById('workEndTime');
+modalDate.textContent = new Date().toLocaleDateString('ru-RU', {
+weekday: 'long',
+year: 'numeric',
+month: 'long',
+day: 'numeric'
+});
+if (workDayStart) {
+workStartTime.textContent = formatTimeDisplay(workDayStart);
+} else if (todayRecords.length > 0) {
+const firstRecord = new Date(todayRecords[0].start);
+workStartTime.textContent = formatTimeDisplay(firstRecord);
+} else {
+workStartTime.textContent = '--:--';
+}
+if (workDayEnd) {
+workEndTime.textContent = formatTimeDisplay(workDayEnd);
+} else {
+workEndTime.textContent = formatTimeDisplay(new Date());
+}
+const summary = calculateSummary(todayRecords);
+modalContent.innerHTML = `
+<div class="report-card highlight">
+<div class="report-row total">
+<span class="label">💼 Всего работа (кат. 1-6)</span>
+<span class="value">${formatTime(summary.workTotal)}</span>
+</div>
+</div>
+<div class="report-card service">
+<div class="report-row">
+<span class="label">⛪ Служба</span>
+<span class="value">${formatTime(summary.service)}</span>
+</div>
+</div>
+<div class="report-card warning">
+<div class="report-row">
+<span class="label">🚗 Дорога</span>
+<span class="value">${formatTime(summary.road)}</span>
+</div>
+</div>
+<div class="report-card info">
+<div class="report-row">
+<span class="label">☕ Перерыв</span>
+<span class="value">${formatTime(summary.break)}</span>
+</div>
+</div>
+${summary.breakdown.length > 0 ? `
+<div class="report-card">
+<div class="report-header">📋 Детализация</div>
+<div class="breakdown-list">
+${summary.breakdown.map(b => `
+<div class="breakdown-item">
+<span class="name">${b.name}</span>
+<span class="time">${formatTime(b.time)}</span>
+</div>
+`).join('')}
+</div>
+</div>
+` : ''}
+`;
+modal.classList.add('active');
+}
+
+// Close modal
+document.getElementById('modalClose').addEventListener('click', () => {
+document.getElementById('summaryModal').classList.remove('active');
+});
+
+// Calculate summary
+function calculateSummary(records) {
+const workCategories = [1, 2, 3, 4, 5, 6];
+return {
+workTotal: records
+.filter(r => workCategories.includes(r.categoryId))
+.reduce((sum, r) => sum + r.duration, 0),
+service: records
+.filter(r => r.categoryId === 7)
+.reduce((sum, r) => sum + r.duration, 0),
+road: records
+.filter(r => r.categoryId === 9)
+.reduce((sum, r) => sum + r.duration, 0),
+break: records
+.filter(r => r.categoryId === 8)
+.reduce((sum, r) => sum + r.duration, 0),
+breakdown: categories.map(cat => {
+const time = records
+.filter(r => r.categoryId === cat.id)
+.reduce((sum, r) => sum + r.duration, 0);
+return { name: cat.name, time, icon: cat.icon };
+}).filter(b => b.time > 0)
+};
+}
+
+// Render report
+function renderReport(period) {
+const container = document.getElementById('reportContent');
+const periodRecords = getRecordsForPeriod(period);
+if (periodRecords.length === 0) {
+container.innerHTML = `
+<div class="empty-state">
+<div class="icon">📭</div>
+<p>Нет данных за выбранный период</p>
+</div>
+`;
+currentReportData = null;
+return;
+}
+const summary = calculateSummary(periodRecords);
+currentReportData = { summary, period, periodRecords };
+const periodLabels = {
+day: 'День',
+month: 'Месяц',
+range: 'Период'
+};
+const periodDate = getPeriodDateLabel(period);
+container.innerHTML = `
+<div class="report-card highlight">
+<div class="report-header">💼 Работа</div>
+<div class="report-row total">
+<span class="label">Всего рабочее время (кат. 1-6)</span>
+<span class="value">${formatTime(summary.workTotal)}</span>
+</div>
+${summary.breakdown.filter(b => [1,2,3,4,5,6].includes(categories.find(c => c.name === b.name)?.id)).length > 0 ? `
+<div class="breakdown-list">
+${summary.breakdown.filter(b => [1,2,3,4,5,6].includes(categories.find(c => c.name === b.name)?.id)).map(b => `
+<div class="breakdown-item">
+<span class="name">${b.icon} ${b.name}</span>
+<span class="time">${formatTime(b.time)}</span>
+</div>
+`).join('')}
+</div>
+` : ''}
+</div>
+<div class="report-card service">
+<div class="report-header">⛪ Служба</div>
+<div class="report-row">
+<span class="label">Время на службе</span>
+<span class="value">${formatTime(summary.service)}</span>
+</div>
+</div>
+<div class="report-card warning">
+<div class="report-header">🚗 Дорога</div>
+<div class="report-row">
+<span class="label">Время в дороге</span>
+<span class="value">${formatTime(summary.road)}</span>
+</div>
+</div>
+<div class="report-card info">
+<div class="report-header">☕ Перерыв</div>
+<div class="report-row">
+<span class="label">Время перерыва</span>
+<span class="value">${formatTime(summary.break)}</span>
+</div>
+</div>
+<div style="text-align: center; margin-top: 16px; color: var(--text-secondary); font-size: 0.75rem;">
+Отчёт за период: ${periodLabels[period]} (${periodDate})
+</div>
+`;
+}
+
+// Get period date label - UPDATED FORMATS
+function getPeriodDateLabel(period) {
+switch(period) {
+case 'day':
+return selectedDate.toLocaleDateString('ru-RU');
+case 'month':
+if (selectedMonth !== null) {
+// Format: "месяц, год"
+return `${monthNames[selectedMonth]}, ${new Date().getFullYear()}`;
+}
+return 'Текущий месяц';
+case 'range':
+if (rangeStart && rangeEnd) {
+// Format: "дата начала - дата конца"
+return `${rangeStart.toLocaleDateString('ru-RU')} — ${rangeEnd.toLocaleDateString('ru-RU')}`;
+}
+return 'Текущий период';
+}
+}
+
+// Get records for period
+function getRecordsForPeriod(period) {
+switch(period) {
+case 'day':
+const selectedDateStr = selectedDate.toDateString();
+return records.filter(r => new Date(r.start).toDateString() === selectedDateStr);
+case 'month':
+const month = selectedMonth !== null ? selectedMonth : new Date().getMonth();
+const year = new Date().getFullYear();
+return records.filter(r => {
+const recordDate = new Date(r.start);
+return recordDate.getMonth() === month && recordDate.getFullYear() === year;
+});
+case 'range':
+if (!rangeStart || !rangeEnd) {
+return records;
+}
+return records.filter(r => {
+const recordDate = new Date(r.start);
+return recordDate >= rangeStart && recordDate <= rangeEnd;
+});
+}
+}
+
+// Export Report
+function exportReport(format) {
+if (!currentReportData) {
+showToast('Нет данных для экспорта', 'error');
+return;
+}
+const { summary, period, periodRecords } = currentReportData;
+const filename = `отчёт_времени_${period}_${new Date().toISOString().split('T')[0]}`;
+switch(format) {
+case 'pdf':
+exportPDF(filename, summary, period);
+break;
+case 'xls':
+exportXLS(filename, summary, period, periodRecords);
+break;
+case 'csv':
+exportCSV(filename, summary, period, periodRecords);
+break;
+}
+}
+
+// Export PDF
+function exportPDF(filename, summary, period) {
+const { jsPDF } = window.jspdf;
+const doc = new jsPDF();
+doc.setFillColor(99, 102, 241);
+doc.rect(0, 0, 210, 40, 'F');
+doc.setTextColor(255, 255, 255);
+doc.setFontSize(20);
+doc.text('Отчёт по бюджету времени', 105, 20, { align: 'center' });
+doc.setFontSize(12);
+doc.text(`Период: ${getPeriodLabel(period)}`, 105, 30, { align: 'center' });
+const tableData = [
+['💼 Работа (кат. 1-6)', formatTime(summary.workTotal)],
+['⛪ Служба', formatTime(summary.service)],
+['🚗 Дорога', formatTime(summary.road)],
+['☕ Перерыв', formatTime(summary.break)]
+];
+doc.autoTable({
+startY: 50,
+head: [['Категория', 'Время']],
+body: tableData,
+theme: 'striped',
+headStyles: { fillColor: [99, 102, 241] },
+styles: { fontSize: 12 }
+});
+if (summary.breakdown.length > 0) {
+const breakdownData = summary.breakdown.map(b => [b.icon + ' ' + b.name, formatTime(b.time)]);
+doc.autoTable({
+startY: doc.lastAutoTable.finalY + 20,
+head: [['Детализация', 'Время']],
+body: breakdownData,
+theme: 'grid',
+headStyles: { fillColor: [139, 92, 246] },
+styles: { fontSize: 11 }
+});
+}
+const pageCount = doc.internal.getNumberOfPages();
+for(let i = 1; i <= pageCount; i++) {
+doc.setPage(i);
+doc.setFontSize(10);
+doc.setTextColor(150);
+doc.text(`Страница ${i} из ${pageCount}`, 105, 290, { align: 'center' });
+doc.text(`Создано: ${new Date().toLocaleString('ru-RU')}`, 105, 295, { align: 'center' });
+}
+doc.save(`${filename}.pdf`);
+showToast('PDF успешно создан!', 'success');
+}
+
+// Export XLS
+function exportXLS(filename, summary, period, periodRecords) {
+const wb = XLSX.utils.book_new();
+const summaryData = [
+['Отчёт по бюджету времени'],
+[`Период: ${getPeriodLabel(period)}`],
+[`Дата создания: ${new Date().toLocaleString('ru-RU')}`],
+[],
+['Категория', 'Время (часы)', 'Время (минуты)'],
+['💼 Работа (кат. 1-6)', (summary.workTotal / 3600000).toFixed(2), Math.round(summary.workTotal / 60000)],
+['⛪ Служба', (summary.service / 3600000).toFixed(2), Math.round(summary.service / 60000)],
+['🚗 Дорога', (summary.road / 3600000).toFixed(2), Math.round(summary.road / 60000)],
+['☕ Перерыв', (summary.break / 3600000).toFixed(2), Math.round(summary.break / 60000)],
+[],
+['Детализация по категориям'],
+['Категория', 'Время (часы)', 'Время (минуты)']
+];
+summary.breakdown.forEach(b => {
+summaryData.push([b.name, (b.time / 3600000).toFixed(2), Math.round(b.time / 60000)]);
+});
+const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+XLSX.utils.book_append_sheet(wb, wsSummary, 'Сводка');
+const detailsData = [
+['Детальный отчёт'],
+[`Период: ${getPeriodLabel(period)}`],
+[],
+['Дата', 'Категория', 'Начало', 'Конец', 'Длительность (мин)']
+];
+periodRecords.forEach(r => {
+const cat = categories.find(c => c.id === r.categoryId);
+const start = new Date(r.start);
+const end = new Date(r.end);
+detailsData.push([
+start.toLocaleDateString('ru-RU'),
+cat ? cat.name : 'Неизвестно',
+start.toLocaleTimeString('ru-RU'),
+end.toLocaleTimeString('ru-RU'),
+Math.round(r.duration / 60000)
+]);
+});
+const wsDetails = XLSX.utils.aoa_to_sheet(detailsData);
+XLSX.utils.book_append_sheet(wb, wsDetails, 'Детали');
+XLSX.writeFile(wb, `${filename}.xlsx`);
+showToast('Excel файл создан!', 'success');
+}
+
+// Export CSV
+function exportCSV(filename, summary, period, periodRecords) {
+let csv = 'Отчёт по бюджету времени\n';
+csv += `Период: ${getPeriodLabel(period)}\n`;
+csv += `Дата создания: ${new Date().toLocaleString('ru-RU')}\n\n`;
+csv += 'Категория,Время (часы),Время (минуты)\n';
+csv += `Работа (кат. 1-6),${(summary.workTotal / 3600000).toFixed(2)},${Math.round(summary.workTotal / 60000)}\n`;
+csv += `Служба,${(summary.service / 3600000).toFixed(2)},${Math.round(summary.service / 60000)}\n`;
+csv += `Дорога,${(summary.road / 3600000).toFixed(2)},${Math.round(summary.road / 60000)}\n`;
+csv += `Перерыв,${(summary.break / 3600000).toFixed(2)},${Math.round(summary.break / 60000)}\n\n`;
+csv += 'Детализация по категориям\n';
+csv += 'Категория,Время (часы),Время (минуты)\n';
+summary.breakdown.forEach(b => {
+csv += `${b.name},${(b.time / 3600000).toFixed(2)},${Math.round(b.time / 60000)}\n`;
+});
+csv += '\nДетальный отчёт\n';
+csv += 'Дата,Категория,Начало,Конец,Длительность (мин)\n';
+periodRecords.forEach(r => {
+const cat = categories.find(c => c.id === r.categoryId);
+const start = new Date(r.start);
+const end = new Date(r.end);
+csv += `${start.toLocaleDateString('ru-RU')},${cat ? cat.name : 'Неизвестно'},${start.toLocaleTimeString('ru-RU')},${end.toLocaleTimeString('ru-RU')},${Math.round(r.duration / 60000)}\n`;
+});
+const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+const link = document.createElement('a');
+link.href = URL.createObjectURL(blob);
+link.download = `${filename}.csv`;
+link.click();
+showToast('CSV файл создан!', 'success');
+}
+
+// Get period label
+function getPeriodLabel(period) {
+const labels = {
+day: 'День',
+month: 'Месяц',
+range: 'Период'
+};
+return `${labels[period]} (${getPeriodDateLabel(period)})`;
+}
+
+// Share to Telegram
+function shareToTelegram() {
+if (!currentReportData) {
+showToast('Нет данных для отправки', 'error');
+return;
+}
+const { summary } = currentReportData;
+const text = `
 📊 *Отчёт по бюджету времени*
 ${getPeriodLabel(currentPeriod)}
-
 💼 *Работа:* ${formatTime(summary.workTotal)}
 ⛪ *Служба:* ${formatTime(summary.service)}
 🚗 *Дорога:* ${formatTime(summary.road)}
 ☕ *Перерыв:* ${formatTime(summary.break)}
-
 ${summary.breakdown.map(b => `${b.icon} ${b.name}: ${formatTime(b.time)}`).join('\n')}
-            `.trim();
+`.trim();
+const encodedText = encodeURIComponent(text);
+window.open(`https://t.me/share/url?url=${encodedText}`, '_blank');
+showToast('Открываем Telegram...', 'success');
+}
 
-            const encodedText = encodeURIComponent(text);
-            window.open(`https://t.me/share/url?url=${encodedText}`, '_blank');
-            showToast('Открываем Telegram...', 'success');
-        }
-
-        // Share to Email
-        function shareToEmail() {
-            if (!currentReportData) {
-                showToast('Нет данных для отправки', 'error');
-                return;
-            }
-
-            const { summary } = currentReportData;
-            const subject = `Отчёт по времени — ${getPeriodLabel(currentPeriod)}`;
-            
-            const bodyText = `Отчёт по бюджету времени
+// Share to Email
+function shareToEmail() {
+if (!currentReportData) {
+showToast('Нет данных для отправки', 'error');
+return;
+}
+const { summary } = currentReportData;
+const subject = `Отчёт по времени — ${getPeriodLabel(currentPeriod)}`;
+const bodyText = `Отчёт по бюджету времени
 ${getPeriodLabel(currentPeriod)}
-
 💼 Работа: ${formatTime(summary.workTotal)}
 ⛪ Служба: ${formatTime(summary.service)}
 🚗 Дорога: ${formatTime(summary.road)}
 ☕ Перерыв: ${formatTime(summary.break)}
-
 Детализация:
 ${summary.breakdown.map(b => `- ${b.name}: ${formatTime(b.time)}`).join('\n')}
-
 ---
-Создано в приложении "Бюджет Времени"`;
-            
-            const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
-            window.location.href = mailtoLink;
-            
-            showToast('Открываем почтовый клиент...', 'success');
-        }
+Создано в приложении "Времяслед"`;
+const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+window.location.href = mailtoLink;
+showToast('Открываем почтовый клиент...', 'success');
+}
 
-        // Share to VK
-        function shareToVK() {
-            if (!currentReportData) {
-                showToast('Нет данных для отправки', 'error');
-                return;
-            }
-
-            const { summary } = currentReportData;
-            const title = encodeURIComponent(`Отчёт по бюджету времени — ${getPeriodLabel(currentPeriod)}`);
-            
-            const text = `
+// Share to VK
+function shareToVK() {
+if (!currentReportData) {
+showToast('Нет данных для отправки', 'error');
+return;
+}
+const { summary } = currentReportData;
+const title = encodeURIComponent(`Отчёт по бюджету времени — ${getPeriodLabel(currentPeriod)}`);
+const text = `
 📊 Отчёт по бюджету времени
 ${getPeriodLabel(currentPeriod)}
-
 💼 Работа: ${formatTime(summary.workTotal)}
 ⛪ Служба: ${formatTime(summary.service)}
 🚗 Дорога: ${formatTime(summary.road)}
 ☕ Перерыв: ${formatTime(summary.break)}
-
 ${summary.breakdown.map(b => `${b.icon} ${b.name}: ${formatTime(b.time)}`).join('\n')}
-            `.trim();
-            
-            const encodedText = encodeURIComponent(text);
-            const url = encodeURIComponent(window.location.href);
-            
-            const vkShareUrl = `https://vk.com/share.php?url=${url}&title=${title}&comment=${encodedText}`;
-            
-            window.open(vkShareUrl, '_blank');
-            showToast('Открываем ВКонтакте...', 'success');
-        }
+`.trim();
+const encodedText = encodeURIComponent(text);
+const url = encodeURIComponent(window.location.href);
+const vkShareUrl = `https://vk.com/share.php?url=${url}&title=${title}&comment=${encodedText}`;
+window.open(vkShareUrl, '_blank');
+showToast('Открываем ВКонтакте...', 'success');
+}
 
-        // Show toast notification
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast');
-            const toastIcon = document.getElementById('toastIcon');
-            const toastMessage = document.getElementById('toastMessage');
-            
-            toast.className = `toast ${type}`;
-            toastIcon.textContent = type === 'success' ? '✓' : '✕';
-            toastMessage.textContent = message;
-            
-            toast.classList.add('active');
-            
-            setTimeout(() => {
-                toast.classList.remove('active');
-            }, 3000);
-        }
-    </script>
-    <!-- Service Worker Registration -->
+// Show toast notification
+function showToast(message, type = 'success') {
+const toast = document.getElementById('toast');
+const toastIcon = document.getElementById('toastIcon');
+const toastMessage = document.getElementById('toastMessage');
+toast.className = `toast ${type}`;
+toastIcon.textContent = type === 'success' ? '✓' : '✕';
+toastMessage.textContent = message;
+toast.classList.add('active');
+setTimeout(() => {
+toast.classList.remove('active');
+}, 3000);
+}
+</script>
+<!-- Service Worker Registration -->
 <script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/time-tracker/sw.js')
-      .then(() => console.log('Service Worker registered'))
-      .catch(err => console.error('SW registration failed:', err));
-  }
+if ('serviceWorker' in navigator) {
+navigator.serviceWorker.register('/time-tracker/sw.js')
+.then(() => console.log('Service Worker registered'))
+.catch(err => console.error('SW registration failed:', err));
+}
 </script>
 </body>
 </html>
