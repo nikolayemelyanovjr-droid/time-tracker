@@ -2286,5 +2286,13 @@ ${summary.breakdown.map(b => `${b.icon} ${b.name}: ${formatTime(b.time)}`).join(
             }, 3000);
         }
     </script>
+    <!-- Service Worker Registration -->
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/time-tracker/sw.js')
+      .then(() => console.log('Service Worker registered'))
+      .catch(err => console.error('SW registration failed:', err));
+  }
+</script>
 </body>
 </html>
