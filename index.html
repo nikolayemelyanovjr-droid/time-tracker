@@ -1431,7 +1431,7 @@
             updateStats();
         }
 
-        // Finish work
+        // Finish work - FIXED: Now properly resets stats
         function finishWork() {
             const now = new Date();
             workDayEnd = now;
@@ -1452,9 +1452,14 @@
             
             updateTimerDisplay();
             updateStatus(false);
+            
+            // ✅ FIX: Clear categoryTimes BEFORE saving
+            categoryTimes = {};
+            
+            // Save cleared state
             saveToStorage();
             
-            // Reset stats to zero after finish
+            // ✅ FIX: Reset stats AFTER clearing data
             resetStats();
             
             // Reset work day tracking
@@ -1904,7 +1909,7 @@ ${summary.breakdown.map(b => `${b.icon} ${b.name}: ${formatTime(b.time)}`).join(
             showToast('Открываем Telegram...', 'success');
         }
 
-        // Share to Email - FIXED
+        // Share to Email
         function shareToEmail() {
             if (!currentReportData) {
                 showToast('Нет данных для отправки', 'error');
@@ -1928,10 +1933,7 @@ ${summary.breakdown.map(b => `- ${b.name}: ${formatTime(b.time)}`).join('\n')}
 ---
 Создано в приложении "Бюджет Времени"`;
             
-            // Use proper mailto format
             const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
-            
-            // Open email client
             window.location.href = mailtoLink;
             
             showToast('Открываем почтовый клиент...', 'success');
@@ -1962,7 +1964,6 @@ ${summary.breakdown.map(b => `${b.icon} ${b.name}: ${formatTime(b.time)}`).join(
             const encodedText = encodeURIComponent(text);
             const url = encodeURIComponent(window.location.href);
             
-            // VK share URL
             const vkShareUrl = `https://vk.com/share.php?url=${url}&title=${title}&comment=${encodedText}`;
             
             window.open(vkShareUrl, '_blank');
@@ -1988,4 +1989,3 @@ ${summary.breakdown.map(b => `${b.icon} ${b.name}: ${formatTime(b.time)}`).join(
     </script>
 </body>
 </html>
-
