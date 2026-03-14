@@ -449,7 +449,7 @@
         .period-selector {
             display: flex;
             gap: 8px;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
 
         .period-btn {
@@ -473,6 +473,118 @@
 
         .period-btn:hover {
             border-color: var(--primary-light);
+        }
+
+        /* Date Picker Section */
+        .date-picker-section {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .date-picker-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .date-picker-label .icon {
+            font-size: 1.25rem;
+        }
+
+        .date-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 1rem;
+            font-family: 'Inter', sans-serif;
+            color: var(--text);
+            background: var(--surface);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 12px;
+        }
+
+        .date-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .date-range-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .date-input-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .date-input-wrapper label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .month-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .month-btn {
+            padding: 12px 8px;
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--text-secondary);
+        }
+
+        .month-btn.active {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .month-btn:hover {
+            border-color: var(--primary-light);
+        }
+
+        .selected-period-info {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border: 1px solid var(--primary-light);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-top: 16px;
+            text-align: center;
+        }
+
+        .selected-period-info .label {
+            font-size: 0.75rem;
+            color: var(--primary-dark);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .selected-period-info .value {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--primary);
         }
 
         /* Export Section */
@@ -931,6 +1043,10 @@
             .category-card {
                 padding: 14px 8px;
             }
+            
+            .month-selector {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
 
         /* Animations */
@@ -1076,10 +1192,59 @@
             <section class="reports-section">
                 <h2 class="section-title">Отчёты</h2>
                 
+                <!-- Period Selector -->
                 <div class="period-selector">
                     <button class="period-btn active" data-period="day" onclick="setPeriod('day')">День</button>
-                    <button class="period-btn" data-period="week" onclick="setPeriod('week')">Неделя</button>
                     <button class="period-btn" data-period="month" onclick="setPeriod('month')">Месяц</button>
+                    <button class="period-btn" data-period="range" onclick="setPeriod('range')">Период</button>
+                </div>
+
+                <!-- Date Picker Section -->
+                <div class="date-picker-section" id="datePickerSection">
+                    <div class="date-picker-label">
+                        <span class="icon">📅</span>
+                        <span id="datePickerLabel">Выберите дату</span>
+                    </div>
+                    
+                    <!-- Day Picker -->
+                    <div id="dayPicker">
+                        <input type="date" class="date-input" id="dayInput" onchange="selectDay()">
+                    </div>
+                    
+                    <!-- Month Picker -->
+                    <div id="monthPicker" style="display: none;">
+                        <div class="month-selector" id="monthSelector">
+                            <!-- Months will be generated by JS -->
+                        </div>
+                        <div class="selected-period-info" id="monthInfo" style="display: none;">
+                            <div class="label">Выбранный месяц</div>
+                            <div class="value" id="monthInfoValue"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Range Picker -->
+                    <div id="rangePicker" style="display: none;">
+                        <div class="date-range-inputs">
+                            <div class="date-input-wrapper">
+                                <label>📍 Дата начала</label>
+                                <input type="date" class="date-input" id="rangeStartInput" onchange="selectRange()">
+                            </div>
+                            <div class="date-input-wrapper">
+                                <label>🏁 Дата окончания</label>
+                                <input type="date" class="date-input" id="rangeEndInput" onchange="selectRange()">
+                            </div>
+                        </div>
+                        <div class="selected-period-info" id="rangeInfo" style="display: none;">
+                            <div class="label">Выбранный период</div>
+                            <div class="value" id="rangeInfoValue"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Selected Period Info -->
+                    <div class="selected-period-info" id="dayInfo" style="display: none;">
+                        <div class="label">Выбранная дата</div>
+                        <div class="value" id="dayInfoValue"></div>
+                    </div>
                 </div>
 
                 <!-- Export Section -->
@@ -1183,6 +1348,12 @@
             { id: 9, name: 'Дорога', icon: '🚗', type: 'road' }
         ];
 
+        // Month names in Russian
+        const monthNames = [
+            'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+            'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+        ];
+
         // State
         let activeCategory = null;
         let startTime = null;
@@ -1193,10 +1364,19 @@
         let currentReportData = null;
         let workDayStart = null;
         let workDayEnd = null;
+        
+        // Date selection state
+        let selectedDate = new Date();
+        let selectedMonth = null;
+        let rangeStart = null;
+        let rangeEnd = null;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             initDate();
+            initMonthPicker();
+            initDayInput();
+            initRangeInputs();
             startTimer();
             loadFromStorage();
             renderReport('day');
@@ -1206,6 +1386,48 @@
         function initDate() {
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             document.getElementById('currentDate').textContent = new Date().toLocaleDateString('ru-RU', options);
+        }
+
+        // Initialize day input
+        function initDayInput() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('dayInput').max = today;
+            document.getElementById('dayInput').value = today;
+            selectedDate = new Date();
+            updateDayInfo();
+        }
+
+        // Initialize range inputs
+        function initRangeInputs() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('rangeStartInput').max = today;
+            document.getElementById('rangeEndInput').max = today;
+            document.getElementById('rangeEndInput').value = today;
+            
+            // Set start date to beginning of current month
+            const firstOfMonth = new Date();
+            firstOfMonth.setDate(1);
+            document.getElementById('rangeStartInput').value = firstOfMonth.toISOString().split('T')[0];
+            
+            rangeStart = firstOfMonth;
+            rangeEnd = new Date();
+            updateRangeInfo();
+        }
+
+        // Initialize month picker
+        function initMonthPicker() {
+            const container = document.getElementById('monthSelector');
+            const currentYear = new Date().getFullYear();
+            
+            container.innerHTML = monthNames.map((month, index) => `
+                <button class="month-btn" data-month="${index}" onclick="selectMonth(${index})">
+                    ${month}
+                </button>
+            `).join('');
+            
+            // Set current month as active
+            const currentMonth = new Date().getMonth();
+            selectMonth(currentMonth);
         }
 
         // Switch page
@@ -1226,43 +1448,100 @@
         // Set period
         function setPeriod(period) {
             currentPeriod = period;
+            
+            // Update period buttons
             document.querySelectorAll('.period-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.period === period);
             });
+            
+            // Show/hide pickers
+            document.getElementById('dayPicker').style.display = period === 'day' ? 'block' : 'none';
+            document.getElementById('monthPicker').style.display = period === 'month' ? 'block' : 'none';
+            document.getElementById('rangePicker').style.display = period === 'range' ? 'block' : 'none';
+            
+            // Hide all info initially
+            document.getElementById('dayInfo').style.display = 'none';
+            document.getElementById('monthInfo').style.display = 'none';
+            document.getElementById('rangeInfo').style.display = 'none';
+            
+            // Update label
+            const labels = {
+                day: 'Выберите дату',
+                month: 'Выберите месяц',
+                range: 'Выберите период'
+            };
+            document.getElementById('datePickerLabel').textContent = labels[period];
+            
+            // Reset selections
+            selectedMonth = null;
+            rangeStart = null;
+            rangeEnd = null;
+            
+            // Render report
             renderReport(period);
         }
 
-        // Select category
-        function selectCategory(id) {
-            const now = new Date();
+        // Select day
+        function selectDay() {
+            const input = document.getElementById('dayInput');
+            selectedDate = new Date(input.value);
+            updateDayInfo();
+            renderReport('day');
+        }
+
+        // Update day info
+        function updateDayInfo() {
+            document.getElementById('dayInfoValue').textContent = selectedDate.toLocaleDateString('ru-RU', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            document.getElementById('dayInfo').style.display = 'block';
+        }
+
+        // Select month
+        function selectMonth(month) {
+            selectedMonth = month;
+            const currentYear = new Date().getFullYear();
             
-            // Track work day start
-            if (!workDayStart || new Date().toDateString() !== workDayStart.toDateString()) {
-                workDayStart = now;
+            // Update buttons
+            document.querySelectorAll('.month-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.month) === month);
+            });
+            
+            // Show selected info
+            document.getElementById('monthInfoValue').textContent = `${monthNames[month]} ${currentYear}`;
+            document.getElementById('monthInfo').style.display = 'block';
+            
+            renderReport('month');
+        }
+
+        // Select range
+        function selectRange() {
+            const startInput = document.getElementById('rangeStartInput');
+            const endInput = document.getElementById('rangeEndInput');
+            
+            rangeStart = new Date(startInput.value);
+            rangeEnd = new Date(endInput.value);
+            
+            // Validate range
+            if (rangeStart > rangeEnd) {
+                showToast('Дата начала не может быть позже даты окончания', 'error');
+                return;
             }
             
-            // Save previous category time
-            if (activeCategory && startTime) {
-                const elapsed = now - startTime;
-                categoryTimes[activeCategory] = (categoryTimes[activeCategory] || 0) + elapsed;
-                saveRecord(activeCategory, startTime, now);
+            updateRangeInfo();
+            renderReport('range');
+        }
+
+        // Update range info
+        function updateRangeInfo() {
+            if (rangeStart && rangeEnd) {
+                document.getElementById('rangeInfoValue').textContent = 
+                    `${rangeStart.toLocaleDateString('ru-RU')} — ${rangeEnd.toLocaleDateString('ru-RU')}`;
+                document.getElementById('rangeInfo').style.display = 'block';
             }
-            
-            // Update UI for previous category
-            if (activeCategory) {
-                document.querySelector(`[data-id="${activeCategory}"]`)?.classList.remove('active');
-                updateTimeDisplay(activeCategory);
-            }
-            
-            // Set new active category
-            activeCategory = id;
-            startTime = now;
-            
-            // Update UI for new category
-            document.querySelector(`[data-id="${id}"]`)?.classList.add('active');
-            updateTimerDisplay();
-            updateStatus(true);
-            saveToStorage();
         }
 
         // Update timer display
@@ -1305,27 +1584,21 @@
         function updateStats() {
             const workCategories = [1, 2, 3, 4, 5, 6];
             
-            // Calculate work time (categories 1-6)
             let workTime = workCategories.reduce((sum, id) => sum + (categoryTimes[id] || 0), 0);
-            
-            // Add current active time if it's a work category
             if (activeCategory && startTime && workCategories.includes(activeCategory)) {
                 workTime += new Date() - startTime;
             }
             
-            // Calculate break time
             let breakTime = categoryTimes[8] || 0;
             if (activeCategory && startTime && activeCategory === 8) {
                 breakTime += new Date() - startTime;
             }
             
-            // Calculate road time
             let roadTime = categoryTimes[9] || 0;
             if (activeCategory && startTime && activeCategory === 9) {
                 roadTime += new Date() - startTime;
             }
             
-            // Calculate service time
             let serviceTime = categoryTimes[7] || 0;
             if (activeCategory && startTime && activeCategory === 7) {
                 serviceTime += new Date() - startTime;
@@ -1350,7 +1623,7 @@
                 } else {
                     document.getElementById('timerDisplay').textContent = '00:00:00';
                 }
-                updateStats(); // Update stats every second (real-time)
+                updateStats();
             }, 1000);
         }
 
@@ -1431,19 +1704,45 @@
             updateStats();
         }
 
-        // Finish work - FIXED: Now properly resets stats
-        function finishWork() {
+        // Select category
+        function selectCategory(id) {
             const now = new Date();
-            workDayEnd = now;
             
-            // Save current category time
+            if (!workDayStart || new Date().toDateString() !== workDayStart.toDateString()) {
+                workDayStart = now;
+            }
+            
             if (activeCategory && startTime) {
                 const elapsed = now - startTime;
                 categoryTimes[activeCategory] = (categoryTimes[activeCategory] || 0) + elapsed;
                 saveRecord(activeCategory, startTime, now);
             }
             
-            // Reset state
+            if (activeCategory) {
+                document.querySelector(`[data-id="${activeCategory}"]`)?.classList.remove('active');
+                updateTimeDisplay(activeCategory);
+            }
+            
+            activeCategory = id;
+            startTime = now;
+            
+            document.querySelector(`[data-id="${id}"]`)?.classList.add('active');
+            updateTimerDisplay();
+            updateStatus(true);
+            saveToStorage();
+        }
+
+        // Finish work
+        function finishWork() {
+            const now = new Date();
+            workDayEnd = now;
+            
+            if (activeCategory && startTime) {
+                const elapsed = now - startTime;
+                categoryTimes[activeCategory] = (categoryTimes[activeCategory] || 0) + elapsed;
+                saveRecord(activeCategory, startTime, now);
+            }
+            
             if (activeCategory) {
                 document.querySelector(`[data-id="${activeCategory}"]`)?.classList.remove('active');
             }
@@ -1453,21 +1752,14 @@
             updateTimerDisplay();
             updateStatus(false);
             
-            // ✅ FIX: Clear categoryTimes BEFORE saving
             categoryTimes = {};
-            
-            // Save cleared state
             saveToStorage();
-            
-            // ✅ FIX: Reset stats AFTER clearing data
             resetStats();
             
-            // Reset work day tracking
             workDayStart = null;
             workDayEnd = null;
             localStorage.removeItem('workDayStart');
             
-            // Show summary modal
             showSummaryModal();
         }
 
@@ -1497,7 +1789,6 @@
                 day: 'numeric' 
             });
             
-            // Set work day start and end times
             if (workDayStart) {
                 workStartTime.textContent = formatTimeDisplay(workDayStart);
             } else if (todayRecords.length > 0) {
@@ -1610,8 +1901,8 @@
             
             const periodLabels = {
                 day: 'День',
-                week: 'Неделя',
-                month: 'Месяц'
+                month: 'Месяц',
+                range: 'Период'
             };
             
             const periodDate = getPeriodDateLabel(period);
@@ -1667,39 +1958,46 @@
 
         // Get period date label
         function getPeriodDateLabel(period) {
-            const now = new Date();
             switch(period) {
                 case 'day':
-                    return now.toLocaleDateString('ru-RU');
-                case 'week':
-                    const dayOfWeek = now.getDay() || 7;
-                    const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek + 1);
-                    return `${monday.toLocaleDateString('ru-RU')} - ${now.toLocaleDateString('ru-RU')}`;
+                    return selectedDate.toLocaleDateString('ru-RU');
                 case 'month':
-                    return now.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+                    if (selectedMonth !== null) {
+                        return `${monthNames[selectedMonth]} ${new Date().getFullYear()}`;
+                    }
+                    return 'Текущий месяц';
+                case 'range':
+                    if (rangeStart && rangeEnd) {
+                        return `${rangeStart.toLocaleDateString('ru-RU')} — ${rangeEnd.toLocaleDateString('ru-RU')}`;
+                    }
+                    return 'Текущий период';
             }
         }
 
         // Get records for period
         function getRecordsForPeriod(period) {
-            const now = new Date();
-            let startDate;
-            
             switch(period) {
                 case 'day':
-                    startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                    break;
-                case 'week':
-                    const dayOfWeek = now.getDay() || 7;
-                    startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek + 1);
-                    startDate.setHours(0, 0, 0, 0);
-                    break;
+                    const selectedDateStr = selectedDate.toDateString();
+                    return records.filter(r => new Date(r.start).toDateString() === selectedDateStr);
+                    
                 case 'month':
-                    startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-                    break;
+                    const month = selectedMonth !== null ? selectedMonth : new Date().getMonth();
+                    const year = new Date().getFullYear();
+                    return records.filter(r => {
+                        const recordDate = new Date(r.start);
+                        return recordDate.getMonth() === month && recordDate.getFullYear() === year;
+                    });
+                    
+                case 'range':
+                    if (!rangeStart || !rangeEnd) {
+                        return records;
+                    }
+                    return records.filter(r => {
+                        const recordDate = new Date(r.start);
+                        return recordDate >= rangeStart && recordDate <= rangeEnd;
+                    });
             }
-            
-            return records.filter(r => new Date(r.start) >= startDate);
         }
 
         // Export Report
@@ -1730,7 +2028,6 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
 
-            // Header
             doc.setFillColor(99, 102, 241);
             doc.rect(0, 0, 210, 40, 'F');
             doc.setTextColor(255, 255, 255);
@@ -1739,7 +2036,6 @@
             doc.setFontSize(12);
             doc.text(`Период: ${getPeriodLabel(period)}`, 105, 30, { align: 'center' });
 
-            // Summary table
             const tableData = [
                 ['💼 Работа (кат. 1-6)', formatTime(summary.workTotal)],
                 ['⛪ Служба', formatTime(summary.service)],
@@ -1756,7 +2052,6 @@
                 styles: { fontSize: 12 }
             });
 
-            // Breakdown
             if (summary.breakdown.length > 0) {
                 const breakdownData = summary.breakdown.map(b => [b.icon + ' ' + b.name, formatTime(b.time)]);
                 doc.autoTable({
@@ -1769,7 +2064,6 @@
                 });
             }
 
-            // Footer
             const pageCount = doc.internal.getNumberOfPages();
             for(let i = 1; i <= pageCount; i++) {
                 doc.setPage(i);
@@ -1787,7 +2081,6 @@
         function exportXLS(filename, summary, period, periodRecords) {
             const wb = XLSX.utils.book_new();
 
-            // Summary sheet
             const summaryData = [
                 ['Отчёт по бюджету времени'],
                 [`Период: ${getPeriodLabel(period)}`],
@@ -1810,7 +2103,6 @@
             const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
             XLSX.utils.book_append_sheet(wb, wsSummary, 'Сводка');
 
-            // Details sheet
             const detailsData = [
                 ['Детальный отчёт'],
                 [`Период: ${getPeriodLabel(period)}`],
@@ -1878,8 +2170,8 @@
         function getPeriodLabel(period) {
             const labels = {
                 day: 'День',
-                week: 'Неделя',
-                month: 'Месяц'
+                month: 'Месяц',
+                range: 'Период'
             };
             return `${labels[period]} (${getPeriodDateLabel(period)})`;
         }
